@@ -21,38 +21,35 @@ public class BlackjackBaselineTest {
 
     private static void testFaceCardsCountAsTen() {
         Main.clearHands();
-        Main.playerHand[0] = "KH";
-        Main.playerHand[1] = "QS";
-        Main.playerCardCount = 2;
+        Main.playerHand.add(blackjack.Card.fromCode("KH"));
+        Main.playerHand.add(blackjack.Card.fromCode("QS"));
 
-        assertEquals(20, Main.handValue(Main.playerHand, Main.playerCardCount), "face-card value");
+        assertEquals(20, Main.playerHand.value(), "face-card value");
     }
 
     private static void testAceCountsAsElevenWhenSafe() {
         Main.clearHands();
-        Main.playerHand[0] = "AH";
-        Main.playerHand[1] = "9S";
-        Main.playerCardCount = 2;
+        Main.playerHand.add(blackjack.Card.fromCode("AH"));
+        Main.playerHand.add(blackjack.Card.fromCode("9S"));
 
-        assertEquals(20, Main.handValue(Main.playerHand, Main.playerCardCount), "soft ace value");
+        assertEquals(20, Main.playerHand.value(), "soft ace value");
     }
 
     private static void testAceCountsAsOneWhenElevenWouldBust() {
         Main.clearHands();
-        Main.playerHand[0] = "AH";
-        Main.playerHand[1] = "9S";
-        Main.playerHand[2] = "5D";
-        Main.playerCardCount = 3;
+        Main.playerHand.add(blackjack.Card.fromCode("AH"));
+        Main.playerHand.add(blackjack.Card.fromCode("9S"));
+        Main.playerHand.add(blackjack.Card.fromCode("5D"));
 
-        assertEquals(15, Main.handValue(Main.playerHand, Main.playerCardCount), "ace adjusted value");
+        assertEquals(15, Main.playerHand.value(), "ace adjusted value");
     }
 
     private static void testStartRoundDealsTwoCardsEach() {
         Main.resetGame();
         Main.startRound();
 
-        assertEquals(2, Main.playerCardCount, "player card count");
-        assertEquals(2, Main.dealerCardCount, "dealer card count");
+        assertEquals(2, Main.playerHand.cardCount(), "player card count");
+        assertEquals(2, Main.dealerHand.cardCount(), "dealer card count");
         assertEquals(4, Main.deck.position(), "deck position after initial deal");
     }
 
@@ -62,22 +59,21 @@ public class BlackjackBaselineTest {
 
         Main.playerHit();
 
-        assertEquals(3, Main.playerCardCount, "player card count after hit");
+        assertEquals(3, Main.playerHand.cardCount(), "player card count after hit");
         assertEquals(5, Main.deck.position(), "deck position after hit");
     }
 
     private static void testDealerDrawsUntilSeventeen() {
         Main.resetGame();
         Main.clearHands();
-        Main.dealerHand[0] = "2H";
-        Main.dealerHand[1] = "3D";
-        Main.dealerCardCount = 2;
+        Main.dealerHand.add(blackjack.Card.fromCode("2H"));
+        Main.dealerHand.add(blackjack.Card.fromCode("3D"));
         Main.deck = new blackjack.Deck("4C", "5S", "KH");
 
         Main.dealerPlay();
 
-        assertEquals(5, Main.dealerCardCount, "dealer card count after drawing");
-        assertEquals(24, Main.handValue(Main.dealerHand, Main.dealerCardCount), "dealer final value");
+        assertEquals(5, Main.dealerHand.cardCount(), "dealer card count after drawing");
+        assertEquals(24, Main.dealerHand.value(), "dealer final value");
     }
 
     private static void testEqualValuesArePush() {

@@ -1,4 +1,6 @@
+import blackjack.Card;
 import blackjack.Deck;
+import blackjack.Hand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -65,13 +67,13 @@ class BlackjackCharacterizationTest {
         void startRoundDealsTwoCardsEachAlternatingPlayerFirst() {
             Main.startRound();
 
-            assertEquals(2, Main.playerCardCount);
-            assertEquals(2, Main.dealerCardCount);
+            assertEquals(2, Main.playerHand.cardCount());
+            assertEquals(2, Main.dealerHand.cardCount());
             assertEquals(4, Main.deck.position());
-            assertEquals("AH", Main.playerHand[0]);
-            assertEquals("2H", Main.dealerHand[0]);
-            assertEquals("3H", Main.playerHand[1]);
-            assertEquals("4H", Main.dealerHand[1]);
+            assertEquals("AH", Main.playerHand.cardAt(0).toString());
+            assertEquals("2H", Main.dealerHand.cardAt(0).toString());
+            assertEquals("3H", Main.playerHand.cardAt(1).toString());
+            assertEquals("4H", Main.dealerHand.cardAt(1).toString());
         }
     }
 
@@ -79,12 +81,11 @@ class BlackjackCharacterizationTest {
     class HandValue {
 
         private int valueOf(String... cards) {
-            Main.clearHands();
-            for (int i = 0; i < cards.length; i++) {
-                Main.playerHand[i] = cards[i];
+            Hand hand = new Hand();
+            for (String card : cards) {
+                hand.add(Card.fromCode(card));
             }
-            Main.playerCardCount = cards.length;
-            return Main.handValue(Main.playerHand, Main.playerCardCount);
+            return hand.value();
         }
 
         @Test
@@ -111,16 +112,6 @@ class BlackjackCharacterizationTest {
         void twoAcesCountAsTwelve() {
             assertEquals(12, valueOf("AH", "AS"));
         }
-
-        @Test
-        void nullSlotsWithinCountAreSkipped() {
-            Main.clearHands();
-            Main.playerHand[0] = "KH";
-            Main.playerHand[1] = null;
-            Main.playerCardCount = 2;
-
-            assertEquals(10, Main.handValue(Main.playerHand, Main.playerCardCount));
-        }
     }
 
     @Nested
@@ -132,20 +123,19 @@ class BlackjackCharacterizationTest {
 
             Main.playerHit();
 
-            assertEquals(3, Main.playerCardCount);
+            assertEquals(3, Main.playerHand.cardCount());
             assertEquals(5, Main.deck.position());
-            assertEquals("5H", Main.playerHand[2]);
+            assertEquals("5H", Main.playerHand.cardAt(2).toString());
         }
 
         @Test
         void handOverTwentyOneIsABust() {
-            Main.clearHands();
-            Main.playerHand[0] = "KH";
-            Main.playerHand[1] = "QD";
-            Main.playerHand[2] = "2S";
-            Main.playerCardCount = 3;
+            Hand hand = new Hand();
+            hand.add(Card.fromCode("KH"));
+            hand.add(Card.fromCode("QD"));
+            hand.add(Card.fromCode("2S"));
 
-            assertTrue(Main.handValue(Main.playerHand, Main.playerCardCount) > 21);
+            assertTrue(hand.isBust());
         }
     }
 
@@ -155,39 +145,36 @@ class BlackjackCharacterizationTest {
         @Test
         void dealerDrawsWhileBelowSeventeenAndMayBust() {
             Main.clearHands();
-            Main.dealerHand[0] = "2H";
-            Main.dealerHand[1] = "3D";
-            Main.dealerCardCount = 2;
+            Main.dealerHand.add(Card.fromCode("2H"));
+            Main.dealerHand.add(Card.fromCode("3D"));
             Main.deck = new Deck("4C", "5S", "KH");
 
             Main.dealerPlay();
 
-            assertEquals(5, Main.dealerCardCount);
-            assertEquals(24, Main.handValue(Main.dealerHand, Main.dealerCardCount));
+            assertEquals(5, Main.dealerHand.cardCount());
+            assertEquals(24, Main.dealerHand.value());
         }
 
         @Test
         void dealerStandsOnHardSeventeen() {
             Main.clearHands();
-            Main.dealerHand[0] = "KH";
-            Main.dealerHand[1] = "7D";
-            Main.dealerCardCount = 2;
+            Main.dealerHand.add(Card.fromCode("KH"));
+            Main.dealerHand.add(Card.fromCode("7D"));
 
             Main.dealerPlay();
 
-            assertEquals(2, Main.dealerCardCount);
+            assertEquals(2, Main.dealerHand.cardCount());
         }
 
         @Test
         void dealerStandsOnSoftSeventeen() {
             Main.clearHands();
-            Main.dealerHand[0] = "AH";
-            Main.dealerHand[1] = "6D";
-            Main.dealerCardCount = 2;
+            Main.dealerHand.add(Card.fromCode("AH"));
+            Main.dealerHand.add(Card.fromCode("6D"));
 
             Main.dealerPlay();
 
-            assertEquals(2, Main.dealerCardCount);
+            assertEquals(2, Main.dealerHand.cardCount());
         }
     }
 

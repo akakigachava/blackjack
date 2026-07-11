@@ -1,13 +1,12 @@
 import blackjack.Deck;
+import blackjack.Hand;
 
 import java.util.Scanner;
 
 public class Main {
     public static Deck deck = new Deck();
-    public static String[] playerHand = new String[12];
-    public static String[] dealerHand = new String[12];
-    public static int playerCardCount = 0;
-    public static int dealerCardCount = 0;
+    public static Hand playerHand = new Hand();
+    public static Hand dealerHand = new Hand();
     public static Scanner input = new Scanner(System.in);
 
     public static void main(String[] args) {
@@ -21,7 +20,7 @@ public class Main {
         while (true) {
             printTable(false);
 
-            if (handValue(playerHand, playerCardCount) > 21) {
+            if (playerHand.isBust()) {
                 printTable(true);
                 System.out.println("Player busts. Dealer wins.");
                 break;
@@ -43,18 +42,14 @@ public class Main {
             if (command.equals("stand")) {
                 dealerPlay();
                 printTable(true);
-                System.out.println(determineOutcome(
-                        handValue(playerHand, playerCardCount),
-                        handValue(dealerHand, dealerCardCount)));
+                System.out.println(determineOutcome(playerHand.value(), dealerHand.value()));
                 break;
             }
 
             System.out.println("Invalid command. You stand.");
             dealerPlay();
             printTable(true);
-            System.out.println(determineOutcome(
-                    handValue(playerHand, playerCardCount),
-                    handValue(dealerHand, dealerCardCount)));
+            System.out.println(determineOutcome(playerHand.value(), dealerHand.value()));
             break;
         }
     }
@@ -65,70 +60,26 @@ public class Main {
     }
 
     public static void clearHands() {
-        for (int i = 0; i < playerHand.length; i++) {
-            playerHand[i] = null;
-        }
-        for (int i = 0; i < dealerHand.length; i++) {
-            dealerHand[i] = null;
-        }
-        playerCardCount = 0;
-        dealerCardCount = 0;
+        playerHand = new Hand();
+        dealerHand = new Hand();
     }
 
     public static void startRound() {
         clearHands();
-        playerHand[playerCardCount] = drawCard();
-        playerCardCount++;
-        dealerHand[dealerCardCount] = drawCard();
-        dealerCardCount++;
-        playerHand[playerCardCount] = drawCard();
-        playerCardCount++;
-        dealerHand[dealerCardCount] = drawCard();
-        dealerCardCount++;
-    }
-
-    public static String drawCard() {
-        return deck.draw().toString();
+        playerHand.add(deck.draw());
+        dealerHand.add(deck.draw());
+        playerHand.add(deck.draw());
+        dealerHand.add(deck.draw());
     }
 
     public static void playerHit() {
-        playerHand[playerCardCount] = drawCard();
-        playerCardCount++;
+        playerHand.add(deck.draw());
     }
 
     public static void dealerPlay() {
-        while (handValue(dealerHand, dealerCardCount) < 17) {
-            dealerHand[dealerCardCount] = drawCard();
-            dealerCardCount++;
+        while (dealerHand.value() < 17) {
+            dealerHand.add(deck.draw());
         }
-    }
-
-    public static int handValue(String[] hand, int count) {
-        int total = 0;
-        int aces = 0;
-
-        for (int i = 0; i < count; i++) {
-            String card = hand[i];
-            if (card == null || card.length() == 0) {
-                continue;
-            }
-            String rank = card.substring(0, card.length() - 1);
-            if (rank.equals("A")) {
-                total += 11;
-                aces++;
-            } else if (rank.equals("K") || rank.equals("Q") || rank.equals("J")) {
-                total += 10;
-            } else {
-                total += Integer.parseInt(rank);
-            }
-        }
-
-        while (total > 21 && aces > 0) {
-            total -= 10;
-            aces--;
-        }
-
-        return total;
     }
 
     public static String determineOutcome(int playerValue, int dealerValue) {
@@ -151,26 +102,25 @@ public class Main {
         System.out.println();
         System.out.println("Dealer:");
         if (showDealer) {
-            printHand(dealerHand, dealerCardCount);
-            System.out.println("Dealer value: " + handValue(dealerHand, dealerCardCount));
+            printHand(dealerHand);
+            System.out.println("Dealer value: " + dealerHand.value());
         } else {
-            System.out.println(dealerHand[0] + " [hidden]");
+            System.out.println(dealerHand.cardAt(0) + " [hidden]");
         }
 
         System.out.println("Player:");
-        printHand(playerHand, playerCardCount);
-        System.out.println("Player value: " + handValue(playerHand, playerCardCount));
+        printHand(playerHand);
+        System.out.println("Player value: " + playerHand.value());
         System.out.println();
     }
 
-    public static void printHand(String[] hand, int count) {
-        for (int i = 0; i < count; i++) {
-            System.out.print(hand[i]);
-            if (i < count - 1) {
+    public static void printHand(Hand hand) {
+        for (int i = 0; i < hand.cardCount(); i++) {
+            System.out.print(hand.cardAt(i));
+            if (i < hand.cardCount() - 1) {
                 System.out.print(" ");
             }
         }
         System.out.println();
     }
 }
-
