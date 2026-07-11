@@ -1,3 +1,4 @@
+import blackjack.Deck;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,41 +16,45 @@ class BlackjackCharacterizationTest {
 
     @BeforeEach
     void resetStaticState() {
-        Main.deck = new String[52];
         Main.resetGame();
     }
 
     @Nested
-    class Deck {
+    class DeckBehavior {
 
         @Test
         void newDeckHasFiftyTwoCards() {
-            assertEquals(52, Main.deck.length);
+            assertEquals(52, new Deck().size());
         }
 
         @Test
         void deckIsNeverShuffled_orderIsDeterministic() {
-            assertEquals("AH", Main.deck[0]);
-            assertEquals("2H", Main.deck[1]);
-            assertEquals("KH", Main.deck[12]);
-            assertEquals("AD", Main.deck[13]);
-            assertEquals("KS", Main.deck[51]);
+            Deck deck = new Deck();
+
+            assertEquals("AH", deck.cardAt(0).toString());
+            assertEquals("2H", deck.cardAt(1).toString());
+            assertEquals("KH", deck.cardAt(12).toString());
+            assertEquals("AD", deck.cardAt(13).toString());
+            assertEquals("KS", deck.cardAt(51).toString());
         }
 
         @Test
-        void drawCardReturnsCardsInOrderAndAdvancesPosition() {
-            assertEquals("AH", Main.drawCard());
-            assertEquals("2H", Main.drawCard());
-            assertEquals(2, Main.deckPosition);
+        void drawReturnsCardsInOrderAndAdvancesPosition() {
+            Deck deck = new Deck();
+
+            assertEquals("AH", deck.draw().toString());
+            assertEquals("2H", deck.draw().toString());
+            assertEquals(2, deck.position());
         }
 
         @Test
         void drawFromExhaustedDeckReturnsPhantomAceOfHeartsWithoutAdvancing() {
-            Main.deckPosition = 52;
+            Deck deck = new Deck("2H");
+            deck.draw();
 
-            assertEquals("AH", Main.drawCard());
-            assertEquals("AH", Main.drawCard());
-            assertEquals(52, Main.deckPosition);
+            assertEquals("AH", deck.draw().toString());
+            assertEquals("AH", deck.draw().toString());
+            assertEquals(1, deck.position());
         }
     }
 
@@ -62,7 +67,7 @@ class BlackjackCharacterizationTest {
 
             assertEquals(2, Main.playerCardCount);
             assertEquals(2, Main.dealerCardCount);
-            assertEquals(4, Main.deckPosition);
+            assertEquals(4, Main.deck.position());
             assertEquals("AH", Main.playerHand[0]);
             assertEquals("2H", Main.dealerHand[0]);
             assertEquals("3H", Main.playerHand[1]);
@@ -128,7 +133,7 @@ class BlackjackCharacterizationTest {
             Main.playerHit();
 
             assertEquals(3, Main.playerCardCount);
-            assertEquals(5, Main.deckPosition);
+            assertEquals(5, Main.deck.position());
             assertEquals("5H", Main.playerHand[2]);
         }
 
@@ -153,8 +158,7 @@ class BlackjackCharacterizationTest {
             Main.dealerHand[0] = "2H";
             Main.dealerHand[1] = "3D";
             Main.dealerCardCount = 2;
-            Main.deck = new String[] {"4C", "5S", "KH"};
-            Main.deckPosition = 0;
+            Main.deck = new Deck("4C", "5S", "KH");
 
             Main.dealerPlay();
 

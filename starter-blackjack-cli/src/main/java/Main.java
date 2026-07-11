@@ -1,8 +1,9 @@
+import blackjack.Deck;
+
 import java.util.Scanner;
 
 public class Main {
-    public static String[] deck = new String[52];
-    public static int deckPosition = 0;
+    public static Deck deck = new Deck();
     public static String[] playerHand = new String[12];
     public static String[] dealerHand = new String[12];
     public static int playerCardCount = 0;
@@ -59,16 +60,7 @@ public class Main {
     }
 
     public static void resetGame() {
-        String[] ranks = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
-        String[] suits = {"H", "D", "C", "S"};
-        int index = 0;
-        for (int suit = 0; suit < suits.length; suit++) {
-            for (int rank = 0; rank < ranks.length; rank++) {
-                deck[index] = ranks[rank] + suits[suit];
-                index++;
-            }
-        }
-        deckPosition = 0;
+        deck = new Deck();
         clearHands();
     }
 
@@ -96,12 +88,7 @@ public class Main {
     }
 
     public static String drawCard() {
-        if (deckPosition >= deck.length) {
-            return "AH";
-        }
-        String card = deck[deckPosition];
-        deckPosition++;
-        return card;
+        return deck.draw().toString();
     }
 
     public static void playerHit() {

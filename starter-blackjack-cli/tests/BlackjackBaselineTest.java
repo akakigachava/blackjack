@@ -14,9 +14,9 @@ public class BlackjackBaselineTest {
     private static void testNewDeckHasFiftyTwoCards() {
         Main.resetGame();
 
-        assertEquals(52, Main.deck.length, "deck size");
-        assertEquals("AH", Main.deck[0], "first deterministic card");
-        assertEquals("KS", Main.deck[51], "last deterministic card");
+        assertEquals(52, Main.deck.size(), "deck size");
+        assertEquals("AH", Main.deck.cardAt(0).toString(), "first deterministic card");
+        assertEquals("KS", Main.deck.cardAt(51).toString(), "last deterministic card");
     }
 
     private static void testFaceCardsCountAsTen() {
@@ -53,7 +53,7 @@ public class BlackjackBaselineTest {
 
         assertEquals(2, Main.playerCardCount, "player card count");
         assertEquals(2, Main.dealerCardCount, "dealer card count");
-        assertEquals(4, Main.deckPosition, "deck position after initial deal");
+        assertEquals(4, Main.deck.position(), "deck position after initial deal");
     }
 
     private static void testPlayerHitAddsOneCard() {
@@ -63,7 +63,7 @@ public class BlackjackBaselineTest {
         Main.playerHit();
 
         assertEquals(3, Main.playerCardCount, "player card count after hit");
-        assertEquals(5, Main.deckPosition, "deck position after hit");
+        assertEquals(5, Main.deck.position(), "deck position after hit");
     }
 
     private static void testDealerDrawsUntilSeventeen() {
@@ -72,8 +72,7 @@ public class BlackjackBaselineTest {
         Main.dealerHand[0] = "2H";
         Main.dealerHand[1] = "3D";
         Main.dealerCardCount = 2;
-        Main.deck = new String[] {"4C", "5S", "KH"};
-        Main.deckPosition = 0;
+        Main.deck = new blackjack.Deck("4C", "5S", "KH");
 
         Main.dealerPlay();
 

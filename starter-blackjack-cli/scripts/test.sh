@@ -14,5 +14,5 @@ fi
 
 # Legacy baseline checks kept from the original starter.
 mkdir -p out
-javac -d out src/main/java/Main.java tests/BlackjackBaselineTest.java
+javac -d out src/main/java/Main.java src/main/java/blackjack/*.java tests/BlackjackBaselineTest.java
 java -cp out BlackjackBaselineTest
