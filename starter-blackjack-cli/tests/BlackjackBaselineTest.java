@@ -77,7 +77,7 @@ public class BlackjackBaselineTest {
     }
 
     private static void testEqualValuesArePush() {
-        String result = Main.determineOutcome(18, 18);
+        String result = blackjack.Rules.determineOutcome(18, 18);
 
         assertEquals("Push", result, "push outcome");
     }

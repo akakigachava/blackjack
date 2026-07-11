@@ -1,6 +1,7 @@
 import blackjack.Card;
 import blackjack.Deck;
 import blackjack.Hand;
+import blackjack.Rules;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -176,6 +177,13 @@ class BlackjackCharacterizationTest {
 
             assertEquals(2, Main.dealerHand.cardCount());
         }
+
+        @Test
+        void dealerDrawThresholdIsSeventeen() {
+            assertTrue(Rules.dealerShouldDraw(16));
+            assertTrue(!Rules.dealerShouldDraw(17));
+            assertTrue(!Rules.dealerShouldDraw(18));
+        }
     }
 
     @Nested
@@ -183,28 +191,28 @@ class BlackjackCharacterizationTest {
 
         @Test
         void playerBustMeansDealerWins() {
-            assertEquals("Dealer wins", Main.determineOutcome(22, 18));
+            assertEquals("Dealer wins", Rules.determineOutcome(22, 18));
         }
 
         @Test
         void dealerBustMeansPlayerWins() {
-            assertEquals("Player wins", Main.determineOutcome(18, 22));
+            assertEquals("Player wins", Rules.determineOutcome(18, 22));
         }
 
         @Test
         void bothBustMeansDealerWinsBecausePlayerBustIsCheckedFirst() {
-            assertEquals("Dealer wins", Main.determineOutcome(25, 26));
+            assertEquals("Dealer wins", Rules.determineOutcome(25, 26));
         }
 
         @Test
         void higherValueWins() {
-            assertEquals("Player wins", Main.determineOutcome(20, 18));
-            assertEquals("Dealer wins", Main.determineOutcome(17, 19));
+            assertEquals("Player wins", Rules.determineOutcome(20, 18));
+            assertEquals("Dealer wins", Rules.determineOutcome(17, 19));
         }
 
         @Test
         void equalValuesArePush() {
-            assertEquals("Push", Main.determineOutcome(18, 18));
+            assertEquals("Push", Rules.determineOutcome(18, 18));
         }
     }
 

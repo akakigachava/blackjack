@@ -1,5 +1,6 @@
 import blackjack.Deck;
 import blackjack.Hand;
+import blackjack.Rules;
 
 import java.util.Scanner;
 
@@ -42,14 +43,14 @@ public class Main {
             if (command.equals("stand")) {
                 dealerPlay();
                 printTable(true);
-                System.out.println(determineOutcome(playerHand.value(), dealerHand.value()));
+                System.out.println(Rules.determineOutcome(playerHand.value(), dealerHand.value()));
                 break;
             }
 
             System.out.println("Invalid command. You stand.");
             dealerPlay();
             printTable(true);
-            System.out.println(determineOutcome(playerHand.value(), dealerHand.value()));
+            System.out.println(Rules.determineOutcome(playerHand.value(), dealerHand.value()));
             break;
         }
     }
@@ -77,25 +78,9 @@ public class Main {
     }
 
     public static void dealerPlay() {
-        while (dealerHand.value() < 17) {
+        while (Rules.dealerShouldDraw(dealerHand.value())) {
             dealerHand.add(deck.draw());
         }
-    }
-
-    public static String determineOutcome(int playerValue, int dealerValue) {
-        if (playerValue > 21) {
-            return "Dealer wins";
-        }
-        if (dealerValue > 21) {
-            return "Player wins";
-        }
-        if (playerValue > dealerValue) {
-            return "Player wins";
-        }
-        if (dealerValue > playerValue) {
-            return "Dealer wins";
-        }
-        return "Push";
     }
 
     public static void printTable(boolean showDealer) {
