@@ -1,111 +1,53 @@
-import blackjack.Deck;
-import blackjack.Hand;
-import blackjack.Rules;
+import blackjack.Command;
+import blackjack.ConsoleView;
+import blackjack.Game;
 
 import java.util.Scanner;
 
 public class Main {
-    public static Deck deck = new Deck();
-    public static Hand playerHand = new Hand();
-    public static Hand dealerHand = new Hand();
-    public static Scanner input = new Scanner(System.in);
 
     public static void main(String[] args) {
-        resetGame();
-        startRound();
+        Game game = new Game();
+        ConsoleView view = new ConsoleView();
+        Scanner input = new Scanner(System.in);
 
-        System.out.println("Partial Blackjack CLI");
-        System.out.println("Commands: hit, stand, q");
-        System.out.println("No betting, split, double down, insurance, or blackjack payout.");
+        game.startRound();
+        view.showWelcome();
 
         while (true) {
-            printTable(false);
+            view.showTable(game, false);
 
-            if (playerHand.isBust()) {
-                printTable(true);
-                System.out.println("Player busts. Dealer wins.");
+            if (game.playerIsBust()) {
+                view.showTable(game, true);
+                view.showPlayerBust();
                 break;
             }
 
-            System.out.print("Player action> ");
-            String command = input.nextLine().trim();
+            view.showActionPrompt();
+            Command command = Command.parse(input.nextLine());
 
-            if (command.equals("q") || command.equals("quit")) {
-                System.out.println("Game stopped.");
+            if (command == Command.QUIT) {
+                view.showGameStopped();
                 break;
             }
 
-            if (command.equals("hit")) {
-                playerHit();
+            if (command == Command.HIT) {
+                game.playerHit();
                 continue;
             }
 
-            if (command.equals("stand")) {
-                dealerPlay();
-                printTable(true);
-                System.out.println(Rules.determineOutcome(playerHand.value(), dealerHand.value()));
+            if (command == Command.STAND) {
+                game.dealerPlay();
+                view.showTable(game, true);
+                view.showOutcome(game.outcome());
                 break;
             }
 
-            System.out.println("Invalid command. You stand.");
-            dealerPlay();
-            printTable(true);
-            System.out.println(Rules.determineOutcome(playerHand.value(), dealerHand.value()));
+            view.showInvalidCommand();
+            game.dealerPlay();
+            view.showTable(game, true);
+            view.showOutcome(game.outcome());
             break;
         }
-    }
-
-    public static void resetGame() {
-        deck = new Deck();
-        clearHands();
-    }
-
-    public static void clearHands() {
-        playerHand = new Hand();
-        dealerHand = new Hand();
-    }
-
-    public static void startRound() {
-        clearHands();
-        playerHand.add(deck.draw());
-        dealerHand.add(deck.draw());
-        playerHand.add(deck.draw());
-        dealerHand.add(deck.draw());
-    }
-
-    public static void playerHit() {
-        playerHand.add(deck.draw());
-    }
-
-    public static void dealerPlay() {
-        while (Rules.dealerShouldDraw(dealerHand.value())) {
-            dealerHand.add(deck.draw());
-        }
-    }
-
-    public static void printTable(boolean showDealer) {
-        System.out.println();
-        System.out.println("Dealer:");
-        if (showDealer) {
-            printHand(dealerHand);
-            System.out.println("Dealer value: " + dealerHand.value());
-        } else {
-            System.out.println(dealerHand.cardAt(0) + " [hidden]");
-        }
-
-        System.out.println("Player:");
-        printHand(playerHand);
-        System.out.println("Player value: " + playerHand.value());
-        System.out.println();
-    }
-
-    public static void printHand(Hand hand) {
-        for (int i = 0; i < hand.cardCount(); i++) {
-            System.out.print(hand.cardAt(i));
-            if (i < hand.cardCount() - 1) {
-                System.out.print(" ");
-            }
-        }
-        System.out.println();
     }
 }

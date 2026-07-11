@@ -1,26 +1,23 @@
 import blackjack.Card;
+import blackjack.Command;
 import blackjack.Deck;
+import blackjack.Game;
 import blackjack.Hand;
 import blackjack.Rules;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Scanner;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BlackjackCharacterizationTest {
-
-    @BeforeEach
-    void resetStaticState() {
-        Main.resetGame();
-    }
 
     @Nested
     class DeckBehavior {
@@ -66,15 +63,18 @@ class BlackjackCharacterizationTest {
 
         @Test
         void startRoundDealsTwoCardsEachAlternatingPlayerFirst() {
-            Main.startRound();
+            Deck deck = new Deck();
+            Game game = new Game(deck);
 
-            assertEquals(2, Main.playerHand.cardCount());
-            assertEquals(2, Main.dealerHand.cardCount());
-            assertEquals(4, Main.deck.position());
-            assertEquals("AH", Main.playerHand.cardAt(0).toString());
-            assertEquals("2H", Main.dealerHand.cardAt(0).toString());
-            assertEquals("3H", Main.playerHand.cardAt(1).toString());
-            assertEquals("4H", Main.dealerHand.cardAt(1).toString());
+            game.startRound();
+
+            assertEquals(2, game.playerHand().cardCount());
+            assertEquals(2, game.dealerHand().cardCount());
+            assertEquals(4, deck.position());
+            assertEquals("AH", game.playerHand().cardAt(0).toString());
+            assertEquals("2H", game.dealerHand().cardAt(0).toString());
+            assertEquals("3H", game.playerHand().cardAt(1).toString());
+            assertEquals("4H", game.dealerHand().cardAt(1).toString());
         }
     }
 
@@ -120,13 +120,15 @@ class BlackjackCharacterizationTest {
 
         @Test
         void hitAddsExactlyOneCardFromTheDeck() {
-            Main.startRound();
+            Deck deck = new Deck();
+            Game game = new Game(deck);
+            game.startRound();
 
-            Main.playerHit();
+            game.playerHit();
 
-            assertEquals(3, Main.playerHand.cardCount());
-            assertEquals(5, Main.deck.position());
-            assertEquals("5H", Main.playerHand.cardAt(2).toString());
+            assertEquals(3, game.playerHand().cardCount());
+            assertEquals(5, deck.position());
+            assertEquals("5H", game.playerHand().cardAt(2).toString());
         }
 
         @Test
@@ -145,44 +147,43 @@ class BlackjackCharacterizationTest {
 
         @Test
         void dealerDrawsWhileBelowSeventeenAndMayBust() {
-            Main.clearHands();
-            Main.dealerHand.add(Card.fromCode("2H"));
-            Main.dealerHand.add(Card.fromCode("3D"));
-            Main.deck = new Deck("4C", "5S", "KH");
+            Game game = new Game(new Deck("4C", "5S", "KH"));
+            game.dealerHand().add(Card.fromCode("2H"));
+            game.dealerHand().add(Card.fromCode("3D"));
 
-            Main.dealerPlay();
+            game.dealerPlay();
 
-            assertEquals(5, Main.dealerHand.cardCount());
-            assertEquals(24, Main.dealerHand.value());
+            assertEquals(5, game.dealerHand().cardCount());
+            assertEquals(24, game.dealerHand().value());
         }
 
         @Test
         void dealerStandsOnHardSeventeen() {
-            Main.clearHands();
-            Main.dealerHand.add(Card.fromCode("KH"));
-            Main.dealerHand.add(Card.fromCode("7D"));
+            Game game = new Game();
+            game.dealerHand().add(Card.fromCode("KH"));
+            game.dealerHand().add(Card.fromCode("7D"));
 
-            Main.dealerPlay();
+            game.dealerPlay();
 
-            assertEquals(2, Main.dealerHand.cardCount());
+            assertEquals(2, game.dealerHand().cardCount());
         }
 
         @Test
         void dealerStandsOnSoftSeventeen() {
-            Main.clearHands();
-            Main.dealerHand.add(Card.fromCode("AH"));
-            Main.dealerHand.add(Card.fromCode("6D"));
+            Game game = new Game();
+            game.dealerHand().add(Card.fromCode("AH"));
+            game.dealerHand().add(Card.fromCode("6D"));
 
-            Main.dealerPlay();
+            game.dealerPlay();
 
-            assertEquals(2, Main.dealerHand.cardCount());
+            assertEquals(2, game.dealerHand().cardCount());
         }
 
         @Test
         void dealerDrawThresholdIsSeventeen() {
             assertTrue(Rules.dealerShouldDraw(16));
-            assertTrue(!Rules.dealerShouldDraw(17));
-            assertTrue(!Rules.dealerShouldDraw(18));
+            assertFalse(Rules.dealerShouldDraw(17));
+            assertFalse(Rules.dealerShouldDraw(18));
         }
     }
 
@@ -217,20 +218,43 @@ class BlackjackCharacterizationTest {
     }
 
     @Nested
+    class CommandParsing {
+
+        @Test
+        void knownCommandsParse() {
+            assertEquals(Command.HIT, Command.parse("hit"));
+            assertEquals(Command.STAND, Command.parse("stand"));
+            assertEquals(Command.QUIT, Command.parse("q"));
+            assertEquals(Command.QUIT, Command.parse("quit"));
+        }
+
+        @Test
+        void surroundingWhitespaceIsIgnored() {
+            assertEquals(Command.HIT, Command.parse("  hit  "));
+        }
+
+        @Test
+        void anythingElseIsInvalid() {
+            assertEquals(Command.INVALID, Command.parse("double"));
+            assertEquals(Command.INVALID, Command.parse("HIT"));
+            assertEquals(Command.INVALID, Command.parse(""));
+        }
+    }
+
+    @Nested
     class CliRounds {
 
         private String playRound(String typedInput) {
             ByteArrayOutputStream captured = new ByteArrayOutputStream();
             PrintStream originalOut = System.out;
-            Scanner originalInput = Main.input;
+            InputStream originalIn = System.in;
             try {
                 System.setOut(new PrintStream(captured, true, StandardCharsets.UTF_8));
-                Main.input = new Scanner(
-                        new ByteArrayInputStream(typedInput.getBytes(StandardCharsets.UTF_8)));
+                System.setIn(new ByteArrayInputStream(typedInput.getBytes(StandardCharsets.UTF_8)));
                 Main.main(new String[0]);
             } finally {
                 System.setOut(originalOut);
-                Main.input = originalInput;
+                System.setIn(originalIn);
             }
             return captured.toString(StandardCharsets.UTF_8);
         }
@@ -271,7 +295,8 @@ class BlackjackCharacterizationTest {
             String output = playRound("q\n");
 
             assertTrue(output.contains("Game stopped."), output);
-            assertTrue(!output.contains("Player wins") && !output.contains("Dealer wins"), output);
+            assertFalse(output.contains("Player wins"), output);
+            assertFalse(output.contains("Dealer wins"), output);
         }
     }
 }
