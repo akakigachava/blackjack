@@ -6,6 +6,7 @@ import blackjack.Rules;
 
 public class BlackjackBaselineTest {
     public static void main(String[] args) {
+        java.util.logging.Logger.getLogger("blackjack").setUseParentHandlers(false);
         testNewDeckHasFiftyTwoCards();
         testFaceCardsCountAsTen();
         testAceCountsAsElevenWhenSafe();

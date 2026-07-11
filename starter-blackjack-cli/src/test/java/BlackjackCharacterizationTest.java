@@ -19,6 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BlackjackCharacterizationTest {
 
+    static {
+        java.util.logging.Logger.getLogger("blackjack").setUseParentHandlers(false);
+    }
+
     @Nested
     class DeckBehavior {
 
