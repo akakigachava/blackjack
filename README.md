@@ -18,20 +18,92 @@ Current files:
 - `Final_Project.md`
 - `Final_Project_Blackjack_rules_reference.md`
 - `Final_rubric.md`
-- `starter-blackjack-cli/`
+- `starter-blackjack-cli/` — the game (now a Maven project)
+- `docs/refactoring-report.md` — midterm refactoring report
+- `docs/extension-readiness.md` — midterm extension-readiness note
 
-The starter code is in `starter-blackjack-cli/`.
+## Requirements
 
-Run the game:
+- JDK 17 or newer (a full JDK — `javac` must be available). Maven itself is not
+  required: the project ships the Maven Wrapper (`mvnw`), which downloads Maven
+  automatically on first use.
+- Docker (only for the Docker commands).
+
+All commands below are run from the project directory:
 
 ```bash
 cd starter-blackjack-cli
+```
+
+## Build
+
+```bash
+./mvnw compile
+```
+
+## Test
+
+```bash
+./mvnw test
+```
+
+Or run everything (Maven tests plus the legacy starter checks) with:
+
+```bash
+./scripts/test.sh
+```
+
+## Run
+
+```bash
+./mvnw compile exec:java
+```
+
+Or:
+
+```bash
 ./scripts/run.sh
 ```
 
-Run the baseline checks:
+Commands in the game: `hit`, `stand`, `q`.
+
+## Package
 
 ```bash
-cd starter-blackjack-cli
-./scripts/test.sh
+./mvnw package
 ```
+
+This produces `target/blackjack-cli-1.0.0.jar`, runnable with:
+
+```bash
+java -jar target/blackjack-cli-1.0.0.jar
+```
+
+## Docker build
+
+```bash
+docker build -t blackjack-cli .
+```
+
+## Docker run
+
+```bash
+docker run -it --rm blackjack-cli
+```
+
+`-it` is required because the game reads player commands from stdin.
+
+## Logging
+
+Game events (game start, round start, cards dealt, player and dealer actions,
+invalid input, round end) are logged to `blackjack.log` in the working
+directory. Logs do not appear in the player-facing CLI output.
+
+## Notes
+
+- If `JAVA_HOME` points to a JRE without a compiler, `./mvnw` fails with
+  "release version 17 not supported". Either export `JAVA_HOME` to a full JDK
+  or use the `scripts/*.sh` wrappers, which detect a JDK automatically.
+- The baseline game intentionally uses an unshuffled, deterministic deck and a
+  partial rule set. See `Midterm_rules.md` for the documented quirks and
+  `docs/refactoring-report.md` for how they were preserved.
