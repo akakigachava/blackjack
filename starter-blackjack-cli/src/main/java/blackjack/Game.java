@@ -1,5 +1,6 @@
 package blackjack;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 public class Game {
@@ -15,6 +16,17 @@ public class Game {
 
     public Game(Deck deck) {
         this.deck = deck;
+    }
+
+    /**
+     * Fixture constructor for tests: starts a game with pre-built hands
+     * instead of dealing from the deck. Production code uses
+     * {@link #startRound()}.
+     */
+    public Game(Deck deck, Hand playerHand, Hand dealerHand) {
+        this.deck = deck;
+        this.playerHand = playerHand;
+        this.dealerHand = dealerHand;
     }
 
     public void startRound() {
@@ -42,20 +54,24 @@ public class Game {
         return playerHand.isBust();
     }
 
-    public String outcome() {
+    public Outcome outcome() {
         return Rules.determineOutcome(playerHand.value(), dealerHand.value());
     }
 
-    public Hand playerHand() {
-        return playerHand;
+    public List<Card> playerCards() {
+        return playerHand.cards();
     }
 
-    public Hand dealerHand() {
-        return dealerHand;
+    public List<Card> dealerCards() {
+        return dealerHand.cards();
     }
 
-    public Deck deck() {
-        return deck;
+    public int playerValue() {
+        return playerHand.value();
+    }
+
+    public int dealerValue() {
+        return dealerHand.value();
     }
 
     private void dealTo(Hand hand, String recipient) {

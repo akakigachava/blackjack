@@ -2,6 +2,7 @@ import blackjack.Card;
 import blackjack.Deck;
 import blackjack.Game;
 import blackjack.Hand;
+import blackjack.Outcome;
 import blackjack.Rules;
 
 public class BlackjackBaselineTest {
@@ -57,8 +58,8 @@ public class BlackjackBaselineTest {
 
         game.startRound();
 
-        assertEquals(2, game.playerHand().cardCount(), "player card count");
-        assertEquals(2, game.dealerHand().cardCount(), "dealer card count");
+        assertEquals(2, game.playerCards().size(), "player card count");
+        assertEquals(2, game.dealerCards().size(), "dealer card count");
         assertEquals(4, deck.position(), "deck position after initial deal");
     }
 
@@ -69,25 +70,26 @@ public class BlackjackBaselineTest {
 
         game.playerHit();
 
-        assertEquals(3, game.playerHand().cardCount(), "player card count after hit");
+        assertEquals(3, game.playerCards().size(), "player card count after hit");
         assertEquals(5, deck.position(), "deck position after hit");
     }
 
     private static void testDealerDrawsUntilSeventeen() {
-        Game game = new Game(new Deck("4C", "5S", "KH"));
-        game.dealerHand().add(Card.fromCode("2H"));
-        game.dealerHand().add(Card.fromCode("3D"));
+        Hand dealerHand = new Hand();
+        dealerHand.add(Card.fromCode("2H"));
+        dealerHand.add(Card.fromCode("3D"));
+        Game game = new Game(new Deck("4C", "5S", "KH"), new Hand(), dealerHand);
 
         game.dealerPlay();
 
-        assertEquals(5, game.dealerHand().cardCount(), "dealer card count after drawing");
-        assertEquals(24, game.dealerHand().value(), "dealer final value");
+        assertEquals(5, game.dealerCards().size(), "dealer card count after drawing");
+        assertEquals(24, game.dealerValue(), "dealer final value");
     }
 
     private static void testEqualValuesArePush() {
-        String result = Rules.determineOutcome(18, 18);
+        Outcome result = Rules.determineOutcome(18, 18);
 
-        assertEquals("Push", result, "push outcome");
+        assertEquals(Outcome.PUSH.name(), result.name(), "push outcome");
     }
 
     private static void assertEquals(int expected, int actual, String message) {

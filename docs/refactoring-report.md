@@ -46,8 +46,9 @@ and still run from `scripts/test.sh`.
 2. Added the characterization tests described above.
 3. Extract Class: `Card` (immutable rank + suit value object) and `Deck`
    (owns the deterministic order, the draw position, and the phantom-`AH`
-   quirk; a seedable constructor replaced the old trick of swapping in a
-   raw array from tests).
+   quirk; an explicit fixed-order constructor, `Deck(String... cardCodes)`,
+   replaced the old trick of swapping in a raw array from tests — it
+   injects a deterministic card sequence and involves no random seed).
 4. Extract Class: `Hand` — replaced array-plus-count pairs and centralized
    the hand-value/ace calculation in one method (`Hand.value()`).
 5. Extract Class: `Rules` — round outcome and the dealer's stand threshold
@@ -73,24 +74,45 @@ After each step the full test suite was rerun, and the CLI round tests
   when the player busts.
 - One round per program run; `q`/`quit` stopping without an outcome.
 
-## Intentional behavior change (documented)
+## Intentional behavior change (documented and tested)
 
 One behavior was removed rather than preserved: the old `handValue` skipped
 `null` entries inside the counted range of the hand array. That situation
 was unreachable through gameplay — it could only be produced by externally
 poking `Main`'s public arrays — and the array representation itself was
-removed. The corresponding characterization test was deleted in the same
-commit that removed the arrays.
+removed.
+
+The new contract is explicit: `Hand.add` rejects `null` with a
+`NullPointerException` and leaves the hand unchanged, so a hand can never
+hold a `null` card. This is enforced by the characterization test
+`addRejectsNullCards`, which replaces the deleted null-tolerance test.
+
+## Rework changes (after the midterm review)
+
+- `Hand.add` now rejects `null` (see the intentional-change section above),
+  with a test pinning the contract.
+- `Rules.determineOutcome` returns an `Outcome` enum (`PLAYER_WINS`,
+  `DEALER_WINS`, `PUSH`) instead of display strings. The exact baseline
+  strings live in `ConsoleView.displayText`, and both the CLI round tests
+  and a dedicated mapping test keep them unchanged.
+- `Game` no longer exposes mutable `Hand` objects. Callers use read-only
+  query methods (`playerCards()`, `dealerCards()`, `playerValue()`,
+  `dealerValue()`); tests seed mid-round scenarios through a fixture
+  constructor `Game(Deck, Hand, Hand)`.
+- `scripts/run.sh` and `scripts/test.sh` share `scripts/jdk-env.sh`, which
+  validates an existing `JAVA_HOME`, consults `/usr/libexec/java_home` on
+  macOS, only accepts a derived home that is a real JDK (never `/usr` from
+  Apple's `javac` shim), and otherwise falls back to `javac` on `PATH` or
+  fails with a clear setup error.
 
 ## Remaining risks
 
 - The round loop in `Main` is covered only by output-capture tests, not
   unit tests; a subtle reordering of prints would be caught, but only as a
   string comparison.
-- `Rules.determineOutcome` returns display strings, so rule results and
-  presentation text are still coupled (see the extension-readiness note).
 - Most tests rely on the deterministic deck order. When shuffling is added
-  in the final project, those tests must switch to seeded `Deck` instances
-  (the seedable constructor already exists for this).
-- `Game` exposes its hands mutably so tests can seed scenarios; production
-  code could misuse this.
+  in the final project, those tests must inject fixed-order decks (the
+  `Deck(String...)` constructor already exists for this) or use a future
+  seeded-shuffle constructor once one is written.
+- The `Game(Deck, Hand, Hand)` fixture constructor is public so tests can
+  reach it; production code is expected to use `startRound()` instead.

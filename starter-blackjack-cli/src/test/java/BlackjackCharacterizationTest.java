@@ -1,8 +1,10 @@
 import blackjack.Card;
 import blackjack.Command;
+import blackjack.ConsoleView;
 import blackjack.Deck;
 import blackjack.Game;
 import blackjack.Hand;
+import blackjack.Outcome;
 import blackjack.Rules;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BlackjackCharacterizationTest {
@@ -72,13 +75,13 @@ class BlackjackCharacterizationTest {
 
             game.startRound();
 
-            assertEquals(2, game.playerHand().cardCount());
-            assertEquals(2, game.dealerHand().cardCount());
+            assertEquals(2, game.playerCards().size());
+            assertEquals(2, game.dealerCards().size());
             assertEquals(4, deck.position());
-            assertEquals("AH", game.playerHand().cardAt(0).toString());
-            assertEquals("2H", game.dealerHand().cardAt(0).toString());
-            assertEquals("3H", game.playerHand().cardAt(1).toString());
-            assertEquals("4H", game.dealerHand().cardAt(1).toString());
+            assertEquals("AH", game.playerCards().get(0).toString());
+            assertEquals("2H", game.dealerCards().get(0).toString());
+            assertEquals("3H", game.playerCards().get(1).toString());
+            assertEquals("4H", game.dealerCards().get(1).toString());
         }
     }
 
@@ -117,6 +120,17 @@ class BlackjackCharacterizationTest {
         void twoAcesCountAsTwelve() {
             assertEquals(12, valueOf("AH", "AS"));
         }
+
+        @Test
+        void addRejectsNullCards() {
+            // Intentional change from the baseline: the old array-based
+            // handValue silently skipped null entries. The Hand contract
+            // now rejects them outright.
+            Hand hand = new Hand();
+
+            assertThrows(NullPointerException.class, () -> hand.add(null));
+            assertEquals(0, hand.cardCount());
+        }
     }
 
     @Nested
@@ -130,9 +144,9 @@ class BlackjackCharacterizationTest {
 
             game.playerHit();
 
-            assertEquals(3, game.playerHand().cardCount());
+            assertEquals(3, game.playerCards().size());
             assertEquals(5, deck.position());
-            assertEquals("5H", game.playerHand().cardAt(2).toString());
+            assertEquals("5H", game.playerCards().get(2).toString());
         }
 
         @Test
@@ -149,38 +163,41 @@ class BlackjackCharacterizationTest {
     @Nested
     class DealerBehavior {
 
+        /** Fixture: a game mid-round with the given dealer cards. */
+        private Game gameWithDealerHand(Deck deck, String... dealerCards) {
+            Hand dealerHand = new Hand();
+            for (String card : dealerCards) {
+                dealerHand.add(Card.fromCode(card));
+            }
+            return new Game(deck, new Hand(), dealerHand);
+        }
+
         @Test
         void dealerDrawsWhileBelowSeventeenAndMayBust() {
-            Game game = new Game(new Deck("4C", "5S", "KH"));
-            game.dealerHand().add(Card.fromCode("2H"));
-            game.dealerHand().add(Card.fromCode("3D"));
+            Game game = gameWithDealerHand(new Deck("4C", "5S", "KH"), "2H", "3D");
 
             game.dealerPlay();
 
-            assertEquals(5, game.dealerHand().cardCount());
-            assertEquals(24, game.dealerHand().value());
+            assertEquals(5, game.dealerCards().size());
+            assertEquals(24, game.dealerValue());
         }
 
         @Test
         void dealerStandsOnHardSeventeen() {
-            Game game = new Game();
-            game.dealerHand().add(Card.fromCode("KH"));
-            game.dealerHand().add(Card.fromCode("7D"));
+            Game game = gameWithDealerHand(new Deck(), "KH", "7D");
 
             game.dealerPlay();
 
-            assertEquals(2, game.dealerHand().cardCount());
+            assertEquals(2, game.dealerCards().size());
         }
 
         @Test
         void dealerStandsOnSoftSeventeen() {
-            Game game = new Game();
-            game.dealerHand().add(Card.fromCode("AH"));
-            game.dealerHand().add(Card.fromCode("6D"));
+            Game game = gameWithDealerHand(new Deck(), "AH", "6D");
 
             game.dealerPlay();
 
-            assertEquals(2, game.dealerHand().cardCount());
+            assertEquals(2, game.dealerCards().size());
         }
 
         @Test
@@ -196,28 +213,35 @@ class BlackjackCharacterizationTest {
 
         @Test
         void playerBustMeansDealerWins() {
-            assertEquals("Dealer wins", Rules.determineOutcome(22, 18));
+            assertEquals(Outcome.DEALER_WINS, Rules.determineOutcome(22, 18));
         }
 
         @Test
         void dealerBustMeansPlayerWins() {
-            assertEquals("Player wins", Rules.determineOutcome(18, 22));
+            assertEquals(Outcome.PLAYER_WINS, Rules.determineOutcome(18, 22));
         }
 
         @Test
         void bothBustMeansDealerWinsBecausePlayerBustIsCheckedFirst() {
-            assertEquals("Dealer wins", Rules.determineOutcome(25, 26));
+            assertEquals(Outcome.DEALER_WINS, Rules.determineOutcome(25, 26));
         }
 
         @Test
         void higherValueWins() {
-            assertEquals("Player wins", Rules.determineOutcome(20, 18));
-            assertEquals("Dealer wins", Rules.determineOutcome(17, 19));
+            assertEquals(Outcome.PLAYER_WINS, Rules.determineOutcome(20, 18));
+            assertEquals(Outcome.DEALER_WINS, Rules.determineOutcome(17, 19));
         }
 
         @Test
         void equalValuesArePush() {
-            assertEquals("Push", Rules.determineOutcome(18, 18));
+            assertEquals(Outcome.PUSH, Rules.determineOutcome(18, 18));
+        }
+
+        @Test
+        void viewMapsOutcomesToTheExactBaselineStrings() {
+            assertEquals("Player wins", ConsoleView.displayText(Outcome.PLAYER_WINS));
+            assertEquals("Dealer wins", ConsoleView.displayText(Outcome.DEALER_WINS));
+            assertEquals("Push", ConsoleView.displayText(Outcome.PUSH));
         }
     }
 

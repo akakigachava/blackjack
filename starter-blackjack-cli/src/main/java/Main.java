@@ -2,6 +2,7 @@ import blackjack.Command;
 import blackjack.ConsoleView;
 import blackjack.Game;
 import blackjack.LogSetup;
+import blackjack.Outcome;
 
 import java.util.Scanner;
 import java.util.logging.Logger;
@@ -50,7 +51,7 @@ public class Main {
                 LOGGER.info("Player action: stand");
                 game.dealerPlay();
                 view.showTable(game, true);
-                String outcome = game.outcome();
+                Outcome outcome = game.outcome();
                 view.showOutcome(outcome);
                 LOGGER.info(() -> "Round ended: " + outcome);
                 break;
@@ -60,7 +61,7 @@ public class Main {
             view.showInvalidCommand();
             game.dealerPlay();
             view.showTable(game, true);
-            String outcome = game.outcome();
+            Outcome outcome = game.outcome();
             view.showOutcome(outcome);
             LOGGER.info(() -> "Round ended: " + outcome);
             break;

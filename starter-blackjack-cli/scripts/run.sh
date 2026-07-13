@@ -3,10 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# Maven needs a full JDK. If JAVA_HOME is unset, derive it from javac.
-if [ -z "${JAVA_HOME:-}" ] && command -v javac >/dev/null; then
-  JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
-  export JAVA_HOME
-fi
+# Maven needs a full JDK; jdk-env.sh validates or discovers JAVA_HOME.
+. scripts/jdk-env.sh
 
 ./mvnw -q compile exec:java

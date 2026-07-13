@@ -10,19 +10,19 @@ public final class Rules {
         return dealerValue < DEALER_STAND_VALUE;
     }
 
-    public static String determineOutcome(int playerValue, int dealerValue) {
+    public static Outcome determineOutcome(int playerValue, int dealerValue) {
         if (playerValue > 21) {
-            return "Dealer wins";
+            return Outcome.DEALER_WINS;
         }
         if (dealerValue > 21) {
-            return "Player wins";
+            return Outcome.PLAYER_WINS;
         }
         if (playerValue > dealerValue) {
-            return "Player wins";
+            return Outcome.PLAYER_WINS;
         }
         if (dealerValue > playerValue) {
-            return "Dealer wins";
+            return Outcome.DEALER_WINS;
         }
-        return "Push";
+        return Outcome.PUSH;
     }
 }

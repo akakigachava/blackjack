@@ -3,12 +3,13 @@ package blackjack;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class Hand {
     private final List<Card> cards = new ArrayList<>();
 
     public void add(Card card) {
-        cards.add(card);
+        cards.add(Objects.requireNonNull(card, "card must not be null"));
     }
 
     public int cardCount() {

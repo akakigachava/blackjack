@@ -102,8 +102,11 @@ directory. Logs do not appear in the player-facing CLI output.
 ## Notes
 
 - If `JAVA_HOME` points to a JRE without a compiler, `./mvnw` fails with
-  "release version 17 not supported". Either export `JAVA_HOME` to a full JDK
-  or use the `scripts/*.sh` wrappers, which detect a JDK automatically.
+  "release version 17 not supported". Export `JAVA_HOME` to a full JDK, or use
+  the `scripts/*.sh` wrappers: they validate an existing `JAVA_HOME` (failing
+  fast if it lacks `bin/javac`), ask `/usr/libexec/java_home` on macOS, or
+  derive a JDK home from the `javac` on `PATH` when it resolves to a real JDK.
+  If no JDK can be found they print a setup error instead of guessing.
 - The baseline game intentionally uses an unshuffled, deterministic deck and a
   partial rule set. See `Midterm_rules.md` for the documented quirks and
   `docs/refactoring-report.md` for how they were preserved.

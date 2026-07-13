@@ -24,19 +24,20 @@ test double that records output) is one class swap.
 - `starter-blackjack-cli/src/main/java/Main.java` — prompt for a bet and
   settle it after the round.
 - Tests can drive `Bankroll` and `Game` directly, with no console, using
-  the seedable `Deck` constructor to force wins, losses, and pushes.
+  the fixed-order `Deck(String...)` constructor to force wins, losses, and
+  pushes.
 
 ## What still makes change difficult
 
-- `Rules.determineOutcome` returns display strings (`"Player wins"`), so
-  rule results and presentation are still coupled. Betting payouts would
-  have to switch on those strings; an `Outcome` enum with the view mapping
-  enum values to text is the natural next refactoring, but it was left out
-  of the midterm because it changes behavior-adjacent code the tests pin
-  down as exact strings.
 - `Main` plays exactly one round per run. Bankroll tracking is only
   meaningful across rounds, so the loop would need a play-again step —
   a small but real change to the characterized CLI behavior.
 - The deterministic deck means "betting strategy" is trivially exploitable
   until shuffling is added; shuffling in turn requires the order-dependent
-  tests to move to seeded decks.
+  tests to inject fixed-order decks (or a seeded shuffle, once a
+  constructor that takes a random seed actually exists).
+
+One earlier obstacle is gone: since the rework, `Rules.determineOutcome`
+returns an `Outcome` enum (`PLAYER_WINS`, `DEALER_WINS`, `PUSH`) and
+`ConsoleView` owns the exact display strings, so betting payouts can switch
+on the enum instead of on presentation text.
