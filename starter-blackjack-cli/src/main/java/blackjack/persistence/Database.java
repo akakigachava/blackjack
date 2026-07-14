@@ -45,9 +45,13 @@ public final class Database {
         Environment environment =
                 new Environment("blackjack", new JdbcTransactionFactory(), dataSource);
         Configuration configuration = new Configuration(environment);
+        // Maps snake_case report columns (player_name, rounds_played, ...)
+        // onto the camelCase bean properties.
+        configuration.setMapUnderscoreToCamelCase(true);
         configuration.addMapper(PlayerMapper.class);
         configuration.addMapper(SessionMapper.class);
         configuration.addMapper(RoundMapper.class);
+        configuration.addMapper(StatsMapper.class);
 
         SqlSessionFactory factory = new SqlSessionFactoryBuilder().build(configuration);
         applySchema(factory);

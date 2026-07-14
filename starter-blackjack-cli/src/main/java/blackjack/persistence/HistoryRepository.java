@@ -58,6 +58,34 @@ public class HistoryRepository {
         }
     }
 
+    /** Latest sessions with player names and round counts, newest first. */
+    public List<SessionSummary> recentSessions(int limit) {
+        try (SqlSession session = factory.openSession()) {
+            return session.getMapper(StatsMapper.class).recentSessions(limit);
+        }
+    }
+
+    /** Win/loss/push counts per player, most wins first. */
+    public List<PlayerOutcomes> playerOutcomeCounts() {
+        try (SqlSession session = factory.openSession()) {
+            return session.getMapper(StatsMapper.class).playerOutcomeCounts();
+        }
+    }
+
+    /** Rounds played per session, averaged per player. */
+    public List<PlayerRoundAverage> averageRoundsPerSession() {
+        try (SqlSession session = factory.openSession()) {
+            return session.getMapper(StatsMapper.class).averageRoundsPerSession();
+        }
+    }
+
+    /** Latest rounds with hands and outcomes, newest first. */
+    public List<RoundHistoryEntry> recentRounds(int limit) {
+        try (SqlSession session = factory.openSession()) {
+            return session.getMapper(StatsMapper.class).recentRounds(limit);
+        }
+    }
+
     /**
      * Persists a completed round and the player actions that led to it,
      * in one transaction. Returns the round id.

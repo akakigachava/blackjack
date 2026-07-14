@@ -3,6 +3,9 @@ import blackjack.ConsoleView;
 import blackjack.Game;
 import blackjack.LogSetup;
 import blackjack.Outcome;
+import blackjack.ReportView;
+import blackjack.persistence.Database;
+import blackjack.persistence.HistoryRepository;
 import blackjack.persistence.SessionRecorder;
 
 import java.util.ArrayList;
@@ -16,6 +19,13 @@ public class Main {
 
     public static void main(String[] args) {
         LogSetup.configure();
+
+        if (hasFlag(args, "--stats")) {
+            LOGGER.info("Stats report requested");
+            showStats();
+            return;
+        }
+
         LOGGER.info("Game started");
 
         Game game = new Game();
@@ -79,6 +89,25 @@ public class Main {
         view.showOutcome(outcome);
         recorder.recordRound(game, outcome, actions);
         LOGGER.info(() -> "Round ended: " + outcome);
+    }
+
+    private static void showStats() {
+        try {
+            HistoryRepository repository = new HistoryRepository(Database.fromEnvironment());
+            new ReportView().showReports(repository);
+        } catch (RuntimeException e) {
+            System.out.println("Could not open the game database: " + e.getMessage());
+            LOGGER.warning("Stats report failed: " + e);
+        }
+    }
+
+    private static boolean hasFlag(String[] args, String flag) {
+        for (String arg : args) {
+            if (arg.equals(flag)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String playerNameFrom(String[] args) {
