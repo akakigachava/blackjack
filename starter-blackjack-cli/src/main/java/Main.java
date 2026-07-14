@@ -3,12 +3,16 @@ import blackjack.ConsoleView;
 import blackjack.Game;
 import blackjack.LogSetup;
 import blackjack.Outcome;
+import blackjack.persistence.SessionRecorder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Logger;
 
 public class Main {
     private static final Logger LOGGER = Logger.getLogger("blackjack.Main");
+    private static final String DEFAULT_PLAYER_NAME = "Player";
 
     public static void main(String[] args) {
         LogSetup.configure();
@@ -17,54 +21,72 @@ public class Main {
         Game game = new Game();
         ConsoleView view = new ConsoleView();
         Scanner input = new Scanner(System.in);
+        List<String> actions = new ArrayList<>();
 
-        game.startRound();
-        view.showWelcome();
+        try (SessionRecorder recorder = SessionRecorder.start(playerNameFrom(args))) {
+            game.startRound();
+            view.showWelcome();
 
-        while (true) {
-            view.showTable(game, false);
+            while (true) {
+                view.showTable(game, false);
 
-            if (game.playerIsBust()) {
-                view.showTable(game, true);
-                view.showPlayerBust();
-                LOGGER.info("Round ended: player bust, dealer wins");
+                if (game.playerIsBust()) {
+                    view.showTable(game, true);
+                    view.showPlayerBust();
+                    recorder.recordRound(game, game.outcome(), actions);
+                    LOGGER.info("Round ended: player bust, dealer wins");
+                    break;
+                }
+
+                view.showActionPrompt();
+                String rawInput = input.nextLine();
+                Command command = Command.parse(rawInput);
+
+                if (command == Command.QUIT) {
+                    view.showGameStopped();
+                    LOGGER.info("Round ended: game stopped by player");
+                    break;
+                }
+
+                if (command == Command.HIT) {
+                    LOGGER.info("Player action: hit");
+                    actions.add("HIT");
+                    game.playerHit();
+                    continue;
+                }
+
+                if (command == Command.STAND) {
+                    LOGGER.info("Player action: stand");
+                    actions.add("STAND");
+                    finishRound(game, view, recorder, actions);
+                    break;
+                }
+
+                LOGGER.warning(() -> "Invalid input: \"" + rawInput.trim() + "\", treated as stand");
+                view.showInvalidCommand();
+                actions.add("STAND");
+                finishRound(game, view, recorder, actions);
                 break;
             }
-
-            view.showActionPrompt();
-            String rawInput = input.nextLine();
-            Command command = Command.parse(rawInput);
-
-            if (command == Command.QUIT) {
-                view.showGameStopped();
-                LOGGER.info("Round ended: game stopped by player");
-                break;
-            }
-
-            if (command == Command.HIT) {
-                LOGGER.info("Player action: hit");
-                game.playerHit();
-                continue;
-            }
-
-            if (command == Command.STAND) {
-                LOGGER.info("Player action: stand");
-                game.dealerPlay();
-                view.showTable(game, true);
-                Outcome outcome = game.outcome();
-                view.showOutcome(outcome);
-                LOGGER.info(() -> "Round ended: " + outcome);
-                break;
-            }
-
-            LOGGER.warning(() -> "Invalid input: \"" + rawInput.trim() + "\", treated as stand");
-            view.showInvalidCommand();
-            game.dealerPlay();
-            view.showTable(game, true);
-            Outcome outcome = game.outcome();
-            view.showOutcome(outcome);
-            LOGGER.info(() -> "Round ended: " + outcome);
-            break;
         }
+    }
+
+    private static void finishRound(Game game, ConsoleView view,
+                                    SessionRecorder recorder, List<String> actions) {
+        game.dealerPlay();
+        view.showTable(game, true);
+        Outcome outcome = game.outcome();
+        view.showOutcome(outcome);
+        recorder.recordRound(game, outcome, actions);
+        LOGGER.info(() -> "Round ended: " + outcome);
+    }
+
+    private static String playerNameFrom(String[] args) {
+        for (int i = 0; i < args.length - 1; i++) {
+            if (args[i].equals("--player") && !args[i + 1].isBlank()) {
+                return args[i + 1].trim();
+            }
+        }
+        return DEFAULT_PLAYER_NAME;
     }
 }

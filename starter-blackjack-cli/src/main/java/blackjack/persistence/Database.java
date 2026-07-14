@@ -15,11 +15,12 @@ import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 /**
  * Builds the MyBatis {@link SqlSessionFactory} and applies the schema.
  *
- * Connection settings come from the environment so no credentials live in
- * source code:
- *   BLACKJACK_DB_URL      (default: jdbc:h2:file:./data/blackjack)
- *   BLACKJACK_DB_USER     (default: sa, the H2 embedded default)
- *   BLACKJACK_DB_PASSWORD (default: empty)
+ * Connection settings come from system properties or the environment so no
+ * credentials live in source code. Lookup order for each setting: system
+ * property, then environment variable, then default.
+ *   blackjack.db.url      / BLACKJACK_DB_URL      (default: jdbc:h2:file:./data/blackjack)
+ *   blackjack.db.user     / BLACKJACK_DB_USER     (default: sa, the H2 embedded default)
+ *   blackjack.db.password / BLACKJACK_DB_PASSWORD (default: empty)
  */
 public final class Database {
 
@@ -29,11 +30,11 @@ public final class Database {
     private Database() {
     }
 
-    /** Factory for the URL/user/password from the environment (or defaults). */
+    /** Factory for the URL/user/password from properties/environment (or defaults). */
     public static SqlSessionFactory fromEnvironment() {
-        String url = envOrDefault("BLACKJACK_DB_URL", DEFAULT_URL);
-        String user = envOrDefault("BLACKJACK_DB_USER", "sa");
-        String password = envOrDefault("BLACKJACK_DB_PASSWORD", "");
+        String url = setting("blackjack.db.url", "BLACKJACK_DB_URL", DEFAULT_URL);
+        String user = setting("blackjack.db.user", "BLACKJACK_DB_USER", "sa");
+        String password = setting("blackjack.db.password", "BLACKJACK_DB_PASSWORD", "");
         return open(url, user, password);
     }
 
@@ -69,8 +70,11 @@ public final class Database {
         }
     }
 
-    private static String envOrDefault(String name, String fallback) {
-        String value = System.getenv(name);
+    private static String setting(String property, String envName, String fallback) {
+        String value = System.getProperty(property);
+        if (value == null || value.isBlank()) {
+            value = System.getenv(envName);
+        }
         return value == null || value.isBlank() ? fallback : value;
     }
 }

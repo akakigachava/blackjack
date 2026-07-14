@@ -24,6 +24,9 @@ class BlackjackCharacterizationTest {
 
     static {
         java.util.logging.Logger.getLogger("blackjack").setUseParentHandlers(false);
+        // CLI round tests run the real Main; keep their session history in
+        // an isolated in-memory database instead of the real ./data file.
+        System.setProperty("blackjack.db.url", "jdbc:h2:mem:charization-tests;DB_CLOSE_DELAY=-1");
     }
 
     @Nested
