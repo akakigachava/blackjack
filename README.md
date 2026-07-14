@@ -21,6 +21,7 @@ Current files:
 - `starter-blackjack-cli/` — the game (now a Maven project)
 - `docs/refactoring-report.md` — midterm refactoring report
 - `docs/extension-readiness.md` — midterm extension-readiness note
+- `docs/database.md` — final project persistence setup and usage
 
 ## Requirements
 
@@ -79,6 +80,13 @@ This produces `target/blackjack-cli-1.0.0.jar`, runnable with:
 java -jar target/blackjack-cli-1.0.0.jar
 ```
 
+The JAR is self-contained (dependencies bundled). Optional flags:
+
+```bash
+java -jar target/blackjack-cli-1.0.0.jar --player Akaki   # play under a name
+java -jar target/blackjack-cli-1.0.0.jar --stats          # show history reports
+```
+
 ## Docker build
 
 ```bash
@@ -98,6 +106,21 @@ docker run -it --rm blackjack-cli
 Game events (game start, round start, cards dealt, player and dealer actions,
 invalid input, round end) are logged to `blackjack.log` in the working
 directory. Logs do not appear in the player-facing CLI output.
+
+## Persistence and statistics
+
+Completed rounds are recorded automatically to an embedded H2 database
+(`./data/blackjack.mv.db`, created on first run) through MyBatis. Play under
+a name with `--player <name>` (default: `Player`), then view the recorded
+history with:
+
+```bash
+java -jar target/blackjack-cli-1.0.0.jar --stats
+```
+
+This prints recent sessions, win/loss/push counts per player, rounds per
+session, and a replay-style list of recent rounds. Connection settings,
+schema, and persistence-test details are documented in `docs/database.md`.
 
 ## Notes
 
