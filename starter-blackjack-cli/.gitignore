@@ -1,3 +1,5 @@
 out/
 target/
 blackjack.log*
+dependency-reduced-pom.xml
+data/
