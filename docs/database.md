@@ -47,9 +47,14 @@ Tables:
 - `players` — id, unique name, created_at
 - `sessions` — id, player_id, started_at, ended_at (one row per program run)
 - `rounds` — id, session_id, round_number, player_cards, dealer_cards,
-  player_value, dealer_value, outcome (the `Outcome` enum name), played_at
-- `round_actions` — id, round_id, seq, action (the player's HIT/STAND
-  decisions in order)
+  player_value, dealer_value, outcome (the `Outcome` enum name), bet,
+  bankroll_change, bankroll_after, played_at
+- `round_actions` — id, round_id, seq, action (the player's
+  HIT/STAND/DOUBLE/SURRENDER decisions in order)
+
+Databases created before betting existed are upgraded in place by
+`ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statements in the same script
+(old rounds show a bet of 0).
 
 ## How to run the persistence tests
 
@@ -79,12 +84,14 @@ Then run the report mode:
 java -jar target/blackjack-cli-1.0.0.jar --stats
 ```
 
-It prints four reports from the persisted history:
+It prints five reports from the persisted history:
 
 1. recent sessions (player, start/end time, rounds played)
-2. player results (win/loss/push counts per player)
-3. rounds per session (totals and average per player)
-4. recent rounds (both hands, values, and outcome, newest first)
+2. player results (win/loss/push counts, blackjacks, and surrenders)
+3. highest bankroll each player has reached
+4. rounds per session (totals and average per player)
+5. recent rounds (hands, values, outcome, bet, and bankroll change,
+   newest first)
 
 For ad-hoc SQL, the H2 shell works against the same file (close the game
 first; the embedded database allows one process at a time):
@@ -98,8 +105,5 @@ java -cp ~/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar \
 
 - The embedded file database supports a single process at a time; running
   the game and the H2 shell simultaneously will fail with a lock error.
-- A session currently contains one round, because the CLI plays one round
-  per run; the schema already models many rounds per session for the
-  upcoming multi-round session work.
-- Quitting with `q` records the session but no round (an aborted round has
-  no outcome to store).
+- Quitting with `q` records the session but not an unfinished round (an
+  aborted round has no outcome to store, and the bet is returned).

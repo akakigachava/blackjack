@@ -22,6 +22,8 @@ Current files:
 - `docs/refactoring-report.md` — midterm refactoring report
 - `docs/extension-readiness.md` — midterm extension-readiness note
 - `docs/database.md` — final project persistence setup and usage
+- `docs/rules-supported.md` — which Blackjack rules are implemented
+- `docs/final-report.md` — final project report
 
 ## Requirements
 
@@ -66,7 +68,10 @@ Or:
 ./scripts/run.sh
 ```
 
-Commands in the game: `hit`, `stand`, `q`.
+Each round asks for a bet first (`enter` bets 10, `q` quits). Round
+commands: `hit`, `stand`, `double`, `surrender`, `q`. The session starts
+with 100 chips and runs until you quit or go broke. See
+`docs/rules-supported.md` for the exact rules.
 
 ## Package
 
@@ -118,9 +123,10 @@ history with:
 java -jar target/blackjack-cli-1.0.0.jar --stats
 ```
 
-This prints recent sessions, win/loss/push counts per player, rounds per
-session, and a replay-style list of recent rounds. Connection settings,
-schema, and persistence-test details are documented in `docs/database.md`.
+This prints recent sessions, win/loss/push counts (with blackjacks and
+surrenders), highest bankrolls, rounds per session, and a replay-style
+list of recent rounds with bets. Connection settings, schema, and
+persistence-test details are documented in `docs/database.md`.
 
 ## Notes
 
