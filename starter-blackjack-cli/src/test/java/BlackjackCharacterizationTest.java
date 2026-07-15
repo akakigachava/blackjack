@@ -1,3 +1,4 @@
+import blackjack.Bankroll;
 import blackjack.Card;
 import blackjack.Command;
 import blackjack.ConsoleView;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -178,6 +180,25 @@ class BlackjackCharacterizationTest {
         }
 
         @Test
+        void naturalIsExactlyATwoCardTwentyOne() {
+            Hand natural = new Hand();
+            natural.add(Card.fromCode("AH"));
+            natural.add(Card.fromCode("KS"));
+            assertTrue(natural.isNatural());
+
+            Hand threeCardTwentyOne = new Hand();
+            threeCardTwentyOne.add(Card.fromCode("7H"));
+            threeCardTwentyOne.add(Card.fromCode("7S"));
+            threeCardTwentyOne.add(Card.fromCode("7D"));
+            assertFalse(threeCardTwentyOne.isNatural());
+
+            Hand twoCardTwenty = new Hand();
+            twoCardTwenty.add(Card.fromCode("AH"));
+            twoCardTwenty.add(Card.fromCode("9S"));
+            assertFalse(twoCardTwenty.isNatural());
+        }
+
+        @Test
         void addRejectsNullCards() {
             // Intentional change from the baseline: the old array-based
             // handValue silently skipped null entries. The Hand contract
@@ -298,6 +319,74 @@ class BlackjackCharacterizationTest {
             assertEquals("Player wins", ConsoleView.displayText(Outcome.PLAYER_WINS));
             assertEquals("Dealer wins", ConsoleView.displayText(Outcome.DEALER_WINS));
             assertEquals("Push", ConsoleView.displayText(Outcome.PUSH));
+            assertEquals("Blackjack! Player wins", ConsoleView.displayText(Outcome.PLAYER_BLACKJACK));
+            assertEquals("Player surrenders", ConsoleView.displayText(Outcome.SURRENDER));
+        }
+
+        @Test
+        void naturalBlackjackOutranksARegularTwentyOne() {
+            assertEquals(Outcome.PLAYER_BLACKJACK, Rules.naturalOutcome(true, false));
+            assertEquals(Outcome.DEALER_WINS, Rules.naturalOutcome(false, true));
+            assertEquals(Outcome.PUSH, Rules.naturalOutcome(true, true));
+            assertNull(Rules.naturalOutcome(false, false));
+        }
+
+        @Test
+        void gameDetectsNaturalsFromTheOpeningHands() {
+            Hand natural = new Hand();
+            natural.add(Card.fromCode("AH"));
+            natural.add(Card.fromCode("QS"));
+            Hand ordinary = new Hand();
+            ordinary.add(Card.fromCode("9H"));
+            ordinary.add(Card.fromCode("9S"));
+
+            Game playerNatural = new Game(new Deck(), natural, ordinary);
+            assertEquals(Outcome.PLAYER_BLACKJACK, playerNatural.naturalOutcome());
+
+            Game noNaturals = new Game(new Deck(), ordinary, ordinary);
+            assertNull(noNaturals.naturalOutcome());
+        }
+
+        @Test
+        void payoutsFollowTheDocumentedRates() {
+            assertEquals(10, Rules.payout(Outcome.PLAYER_WINS, 10));
+            assertEquals(15, Rules.payout(Outcome.PLAYER_BLACKJACK, 10));
+            assertEquals(7, Rules.payout(Outcome.PLAYER_BLACKJACK, 5));
+            assertEquals(-10, Rules.payout(Outcome.DEALER_WINS, 10));
+            assertEquals(0, Rules.payout(Outcome.PUSH, 10));
+            assertEquals(-5, Rules.payout(Outcome.SURRENDER, 10));
+            assertEquals(-5, Rules.payout(Outcome.SURRENDER, 11));
+        }
+    }
+
+    @Nested
+    class BankrollBehavior {
+
+        @Test
+        void bankrollTracksChipsAcrossRounds() {
+            Bankroll bankroll = new Bankroll(100);
+
+            bankroll.apply(15);
+            assertEquals(115, bankroll.chips());
+            bankroll.apply(-40);
+            assertEquals(75, bankroll.chips());
+            assertFalse(bankroll.isEmpty());
+        }
+
+        @Test
+        void bankrollKnowsWhatItCanAfford() {
+            Bankroll bankroll = new Bankroll(20);
+
+            assertTrue(bankroll.canAfford(20));
+            assertFalse(bankroll.canAfford(21));
+        }
+
+        @Test
+        void bankrollIsEmptyAtZero() {
+            Bankroll bankroll = new Bankroll(10);
+            bankroll.apply(-10);
+
+            assertTrue(bankroll.isEmpty());
         }
     }
 
@@ -308,6 +397,8 @@ class BlackjackCharacterizationTest {
         void knownCommandsParse() {
             assertEquals(Command.HIT, Command.parse("hit"));
             assertEquals(Command.STAND, Command.parse("stand"));
+            assertEquals(Command.DOUBLE, Command.parse("double"));
+            assertEquals(Command.SURRENDER, Command.parse("surrender"));
             assertEquals(Command.QUIT, Command.parse("q"));
             assertEquals(Command.QUIT, Command.parse("quit"));
         }
@@ -319,7 +410,7 @@ class BlackjackCharacterizationTest {
 
         @Test
         void anythingElseIsInvalid() {
-            assertEquals(Command.INVALID, Command.parse("double"));
+            assertEquals(Command.INVALID, Command.parse("split"));
             assertEquals(Command.INVALID, Command.parse("HIT"));
             assertEquals(Command.INVALID, Command.parse(""));
         }
@@ -328,7 +419,22 @@ class BlackjackCharacterizationTest {
     @Nested
     class CliRounds {
 
-        private String playRound(String typedInput) {
+        /**
+         * Deck seeds discovered for deterministic CLI rounds:
+         * seed 0 - no naturals in the first two rounds; opening hands are
+         *          player 9S KD (19) vs dealer QD JC (20)
+         * seed 1 - no naturals; player opens 6S 4D (10), so one hit can
+         *          never bust (dealer AC 7C, 18)
+         * seed 6 - player is dealt a natural blackjack (10H AH)
+         * seed 8 - dealer is dealt a natural blackjack (KD AH)
+         */
+        private static final long NO_NATURALS = 0;
+        private static final long LOW_OPENING = 1;
+        private static final long PLAYER_NATURAL = 6;
+        private static final long DEALER_NATURAL = 8;
+
+        private String play(long deckSeed, String typedInput) {
+            System.setProperty("blackjack.deck.seed", Long.toString(deckSeed));
             ByteArrayOutputStream captured = new ByteArrayOutputStream();
             PrintStream originalOut = System.out;
             InputStream originalIn = System.in;
@@ -339,58 +445,125 @@ class BlackjackCharacterizationTest {
             } finally {
                 System.setOut(originalOut);
                 System.setIn(originalIn);
+                System.clearProperty("blackjack.deck.seed");
             }
             return captured.toString(StandardCharsets.UTF_8);
         }
 
-        private void assertSomeOutcomeShown(String output) {
-            assertTrue(output.contains("Player wins")
-                            || output.contains("Dealer wins")
-                            || output.contains("Push"),
+        private int occurrences(String output, String needle) {
+            int count = 0;
+            int index = output.indexOf(needle);
+            while (index >= 0) {
+                count++;
+                index = output.indexOf(needle, index + needle.length());
+            }
+            return count;
+        }
+
+        @Test
+        void standingSettlesTheBetAgainstTheDealer() {
+            String output = play(NO_NATURALS, "\nstand\n");
+
+            assertTrue(output.contains("Player value: 19"), output);
+            assertTrue(output.contains("Dealer value: 20"), output);
+            assertTrue(output.contains("Dealer wins"), output);
+            assertTrue(output.contains("You lose 10. Chips: 90"), output);
+        }
+
+        @Test
+        void playerNaturalBlackjackPaysThreeToTwo() {
+            String output = play(PLAYER_NATURAL, "\n");
+
+            assertTrue(output.contains("Blackjack! Player wins"), output);
+            assertTrue(output.contains("You win 15. Chips: 115"), output);
+        }
+
+        @Test
+        void dealerNaturalEndsTheRoundBeforeAnyAction() {
+            String output = play(DEALER_NATURAL, "\n");
+
+            assertTrue(output.contains("Dealer wins"), output);
+            assertTrue(output.contains("You lose 10. Chips: 90"), output);
+            assertFalse(output.contains("Player action>"), output);
+        }
+
+        @Test
+        void surrenderLosesHalfTheBet() {
+            String output = play(NO_NATURALS, "\nsurrender\n");
+
+            assertTrue(output.contains("Player surrenders"), output);
+            assertTrue(output.contains("You lose 5. Chips: 95"), output);
+        }
+
+        @Test
+        void doubleDownPlaysForTwiceTheBet() {
+            String output = play(NO_NATURALS, "\ndouble\n");
+
+            assertTrue(output.contains("You win 20.")
+                            || output.contains("You lose 20.")
+                            || output.contains("Bet returned."),
                     output);
         }
 
         @Test
-        void standingEndsTheRoundWithAnOutcome() {
-            String output = playRound("stand\n");
+        void doubleDownIsOnlyAllowedAsFirstAction() {
+            // Seed 1 opens with a 10, so the hit cannot bust and the
+            // rejected double is followed by a normal stand.
+            String output = play(LOW_OPENING, "\nhit\ndouble\nstand\n");
 
-            assertTrue(output.contains("Player action> "), output);
-            assertTrue(output.contains("Dealer value: "), output);
-            assertSomeOutcomeShown(output);
+            assertTrue(output.contains("You can only double as your first action."), output);
         }
 
         @Test
-        void hittingKeepsTheRoundGoingUntilStand() {
-            // 25 hit commands guarantee a bust even across reshuffles (any
-            // hand of 22+ cards exceeds 21), so the round always ends
-            // whether or not the stand is ever reached.
-            String output = playRound("hit\n".repeat(25) + "stand\n");
-
-            assertSomeOutcomeShown(output);
-        }
-
-        @Test
-        void hittingUntilBustEndsTheRoundWithDealerWin() {
-            String output = playRound("hit\n".repeat(25));
+        void hittingUntilBustLosesTheBet() {
+            // 25 hits guarantee a bust even across reshuffles: any hand of
+            // 22+ cards exceeds 21.
+            String output = play(NO_NATURALS, "\n" + "hit\n".repeat(25));
 
             assertTrue(output.contains("Player busts. Dealer wins."), output);
+            assertTrue(output.contains("You lose 10. Chips: 90"), output);
         }
 
         @Test
-        void invalidCommandForcesAStandAndEndsTheRound() {
-            String output = playRound("blackjack!\n");
+        void invalidCommandForcesAStandAndSettlesTheBet() {
+            String output = play(NO_NATURALS, "\nblackjack!\n");
 
             assertTrue(output.contains("Invalid command. You stand."), output);
-            assertSomeOutcomeShown(output);
+            assertTrue(output.contains("Dealer wins"), output);
         }
 
         @Test
-        void quitCommandStopsTheGameWithoutAnOutcome() {
-            String output = playRound("q\n");
+        void invalidBetIsRejectedWithAMessage() {
+            String output = play(NO_NATURALS, "abc\n0\n101\n\nstand\n");
+
+            assertEquals(3, occurrences(output, "Enter a whole number between 1 and 100."), output);
+            assertTrue(output.contains("Dealer wins"), output);
+        }
+
+        @Test
+        void sessionSupportsMultipleRounds() {
+            String output = play(NO_NATURALS, "\nstand\n\nstand\nq\n");
+
+            assertTrue(occurrences(output, "Player action> ") >= 2, output);
+            assertTrue(occurrences(output, "Bet (chips: ") >= 3, output);
+            assertTrue(output.contains("Game stopped."), output);
+        }
+
+        @Test
+        void quitAtTheBetPromptPlaysNoRound() {
+            String output = play(NO_NATURALS, "q\n");
 
             assertTrue(output.contains("Game stopped."), output);
-            assertFalse(output.contains("Player wins"), output);
+            assertFalse(output.contains("Player action>"), output);
             assertFalse(output.contains("Dealer wins"), output);
+        }
+
+        @Test
+        void quitMidRoundStopsTheSession() {
+            String output = play(NO_NATURALS, "\nq\n");
+
+            assertTrue(output.contains("Player action> "), output);
+            assertTrue(output.contains("Game stopped."), output);
         }
     }
 }

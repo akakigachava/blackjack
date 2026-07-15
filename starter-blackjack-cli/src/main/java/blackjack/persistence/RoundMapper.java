@@ -7,9 +7,10 @@ import org.apache.ibatis.annotations.Param;
 public interface RoundMapper {
 
     @Insert("INSERT INTO rounds (session_id, round_number, player_cards, dealer_cards,"
-            + " player_value, dealer_value, outcome, played_at)"
+            + " player_value, dealer_value, outcome, bet, bankroll_change, bankroll_after, played_at)"
             + " VALUES (#{sessionId}, #{roundNumber}, #{playerCards}, #{dealerCards},"
-            + " #{playerValue}, #{dealerValue}, #{outcome}, #{playedAt})")
+            + " #{playerValue}, #{dealerValue}, #{outcome}, #{bet}, #{bankrollChange},"
+            + " #{bankrollAfter}, #{playedAt})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(RoundRecord round);
 

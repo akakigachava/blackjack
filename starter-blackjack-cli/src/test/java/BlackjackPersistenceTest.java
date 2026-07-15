@@ -2,6 +2,7 @@ import blackjack.Deck;
 import blackjack.Game;
 import blackjack.persistence.Database;
 import blackjack.persistence.HistoryRepository;
+import blackjack.persistence.PlayerBankrollHigh;
 import blackjack.persistence.PlayerOutcomes;
 import blackjack.persistence.PlayerRoundAverage;
 import blackjack.persistence.RoundHistoryEntry;
@@ -46,6 +47,11 @@ class BlackjackPersistenceTest {
     }
 
     private void saveRound(long sessionId, int roundNumber, String outcome, String... actions) {
+        saveBettedRound(sessionId, roundNumber, outcome, 10, 0, 100, actions);
+    }
+
+    private void saveBettedRound(long sessionId, int roundNumber, String outcome,
+                                 int bet, int change, int after, String... actions) {
         RoundRecord round = new RoundRecord();
         round.setSessionId(sessionId);
         round.setRoundNumber(roundNumber);
@@ -54,6 +60,9 @@ class BlackjackPersistenceTest {
         round.setPlayerValue(14);
         round.setDealerValue(17);
         round.setOutcome(outcome);
+        round.setBet(bet);
+        round.setBankrollChange(change);
+        round.setBankrollAfter(after);
         repository.saveRound(round, List.of(actions));
     }
 
@@ -109,6 +118,17 @@ class BlackjackPersistenceTest {
             assertEquals("DEALER_WINS", round.getOutcome());
             assertNotNull(round.getPlayedAt());
         }
+
+        @Test
+        void savedRoundKeepsBetAndBankrollChanges() {
+            long sessionId = sessionFor("Akaki");
+            saveBettedRound(sessionId, 1, "PLAYER_BLACKJACK", 10, 15, 115, "STAND");
+
+            RoundHistoryEntry round = repository.recentRounds(1).get(0);
+            assertEquals(10, round.getBet());
+            assertEquals(15, round.getBankrollChange());
+            assertEquals(115, round.getBankrollAfter());
+        }
     }
 
     @Nested
@@ -130,12 +150,13 @@ class BlackjackPersistenceTest {
         }
 
         @Test
-        void playerOutcomeCountsAggregateWinsLossesAndPushes() {
+        void playerOutcomeCountsAggregateAllOutcomeKinds() {
             long sessionId = sessionFor("Akaki");
             saveRound(sessionId, 1, "PLAYER_WINS", "STAND");
-            saveRound(sessionId, 2, "PLAYER_WINS", "HIT", "STAND");
+            saveRound(sessionId, 2, "PLAYER_BLACKJACK", "STAND");
             saveRound(sessionId, 3, "DEALER_WINS", "STAND");
             saveRound(sessionId, 4, "PUSH", "STAND");
+            saveRound(sessionId, 5, "SURRENDER", "SURRENDER");
 
             List<PlayerOutcomes> outcomes = repository.playerOutcomeCounts();
 
@@ -143,9 +164,29 @@ class BlackjackPersistenceTest {
             PlayerOutcomes akaki = outcomes.get(0);
             assertEquals("Akaki", akaki.getPlayerName());
             assertEquals(2, akaki.getWins());
+            assertEquals(1, akaki.getBlackjacks());
             assertEquals(1, akaki.getLosses());
             assertEquals(1, akaki.getPushes());
-            assertEquals(4, akaki.getTotalRounds());
+            assertEquals(1, akaki.getSurrenders());
+            assertEquals(5, akaki.getTotalRounds());
+        }
+
+        @Test
+        void highestBankrollReportsTheBestBalanceReached() {
+            long akaki = sessionFor("Akaki");
+            saveBettedRound(akaki, 1, "PLAYER_WINS", 10, 10, 110, "STAND");
+            saveBettedRound(akaki, 2, "PLAYER_BLACKJACK", 10, 15, 125, "STAND");
+            saveBettedRound(akaki, 3, "DEALER_WINS", 20, -20, 105, "STAND");
+            long rival = sessionFor("Dealerbane");
+            saveBettedRound(rival, 1, "DEALER_WINS", 50, -50, 50, "STAND");
+
+            List<PlayerBankrollHigh> highs = repository.highestBankrolls();
+
+            assertEquals(2, highs.size());
+            assertEquals("Akaki", highs.get(0).getPlayerName());
+            assertEquals(125, highs.get(0).getHighestBankroll());
+            assertEquals("Dealerbane", highs.get(1).getPlayerName());
+            assertEquals(50, highs.get(1).getHighestBankroll());
         }
 
         @Test
@@ -205,7 +246,7 @@ class BlackjackPersistenceTest {
                 Game game = new Game(new Deck());
                 game.startRound();
                 game.dealerPlay();
-                recorder.recordRound(game, game.outcome(), List.of("STAND"));
+                recorder.recordRound(game, game.outcome(), List.of("STAND"), 10, -10, 90);
             } finally {
                 restoreDatabaseUrl();
             }
@@ -215,6 +256,9 @@ class BlackjackPersistenceTest {
             assertEquals("RecorderTest", round.getPlayerName());
             assertEquals("AH 3H", round.getPlayerCards());
             assertEquals("DEALER_WINS", round.getOutcome());
+            assertEquals(10, round.getBet());
+            assertEquals(-10, round.getBankrollChange());
+            assertEquals(90, round.getBankrollAfter());
             assertNotNull(written.recentSessions(1).get(0).getEndedAt());
         }
 
@@ -226,7 +270,7 @@ class BlackjackPersistenceTest {
                     try (SessionRecorder recorder = SessionRecorder.start("Nobody")) {
                         Game game = new Game(new Deck());
                         game.startRound();
-                        recorder.recordRound(game, game.outcome(), List.of("STAND"));
+                        recorder.recordRound(game, game.outcome(), List.of("STAND"), 10, -10, 90);
                     }
                 });
             } finally {

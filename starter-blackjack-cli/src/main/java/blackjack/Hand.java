@@ -51,4 +51,9 @@ public class Hand {
     public boolean isBust() {
         return value() > 21;
     }
+
+    /** A natural blackjack: 21 from the first two cards. */
+    public boolean isNatural() {
+        return cards.size() == 2 && value() == 21;
+    }
 }

@@ -39,8 +39,9 @@ public class SessionRecorder implements AutoCloseable {
         }
     }
 
-    /** Persists the finished round and the player actions that led to it. */
-    public void recordRound(Game game, Outcome outcome, List<String> actions) {
+    /** Persists the finished round, its bet and bankroll effect, and the actions taken. */
+    public void recordRound(Game game, Outcome outcome, List<String> actions,
+                            int bet, int bankrollChange, int bankrollAfter) {
         if (repository == null) {
             return;
         }
@@ -52,6 +53,9 @@ public class SessionRecorder implements AutoCloseable {
         round.setPlayerValue(game.playerValue());
         round.setDealerValue(game.dealerValue());
         round.setOutcome(outcome.name());
+        round.setBet(bet);
+        round.setBankrollChange(bankrollChange);
+        round.setBankrollAfter(bankrollAfter);
         repository.saveRound(round, actions);
     }
 

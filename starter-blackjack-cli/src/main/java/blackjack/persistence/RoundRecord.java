@@ -16,6 +16,9 @@ public class RoundRecord {
     private int playerValue;
     private int dealerValue;
     private String outcome;
+    private int bet;
+    private int bankrollChange;
+    private int bankrollAfter;
     private LocalDateTime playedAt;
 
     public Long getId() {
@@ -80,6 +83,30 @@ public class RoundRecord {
 
     public void setOutcome(String outcome) {
         this.outcome = outcome;
+    }
+
+    public int getBet() {
+        return bet;
+    }
+
+    public void setBet(int bet) {
+        this.bet = bet;
+    }
+
+    public int getBankrollChange() {
+        return bankrollChange;
+    }
+
+    public void setBankrollChange(int bankrollChange) {
+        this.bankrollChange = bankrollChange;
+    }
+
+    public int getBankrollAfter() {
+        return bankrollAfter;
+    }
+
+    public void setBankrollAfter(int bankrollAfter) {
+        this.bankrollAfter = bankrollAfter;
     }
 
     public LocalDateTime getPlayedAt() {

@@ -6,6 +6,8 @@ public class PlayerOutcomes {
     private int wins;
     private int losses;
     private int pushes;
+    private int blackjacks;
+    private int surrenders;
     private int totalRounds;
 
     public String getPlayerName() {
@@ -38,6 +40,22 @@ public class PlayerOutcomes {
 
     public void setPushes(int pushes) {
         this.pushes = pushes;
+    }
+
+    public int getBlackjacks() {
+        return blackjacks;
+    }
+
+    public void setBlackjacks(int blackjacks) {
+        this.blackjacks = blackjacks;
+    }
+
+    public int getSurrenders() {
+        return surrenders;
+    }
+
+    public void setSurrenders(int surrenders) {
+        this.surrenders = surrenders;
     }
 
     public int getTotalRounds() {

@@ -17,9 +17,11 @@ public interface StatsMapper {
     List<SessionSummary> recentSessions(int limit);
 
     @Select("SELECT p.name AS player_name,"
-            + " SUM(CASE WHEN r.outcome = 'PLAYER_WINS' THEN 1 ELSE 0 END) AS wins,"
+            + " SUM(CASE WHEN r.outcome IN ('PLAYER_WINS', 'PLAYER_BLACKJACK') THEN 1 ELSE 0 END) AS wins,"
             + " SUM(CASE WHEN r.outcome = 'DEALER_WINS' THEN 1 ELSE 0 END) AS losses,"
             + " SUM(CASE WHEN r.outcome = 'PUSH' THEN 1 ELSE 0 END) AS pushes,"
+            + " SUM(CASE WHEN r.outcome = 'PLAYER_BLACKJACK' THEN 1 ELSE 0 END) AS blackjacks,"
+            + " SUM(CASE WHEN r.outcome = 'SURRENDER' THEN 1 ELSE 0 END) AS surrenders,"
             + " COUNT(r.id) AS total_rounds"
             + " FROM players p"
             + " JOIN sessions s ON s.player_id = p.id"
@@ -27,6 +29,14 @@ public interface StatsMapper {
             + " GROUP BY p.name"
             + " ORDER BY wins DESC, p.name")
     List<PlayerOutcomes> playerOutcomeCounts();
+
+    @Select("SELECT p.name AS player_name, MAX(r.bankroll_after) AS highest_bankroll"
+            + " FROM players p"
+            + " JOIN sessions s ON s.player_id = p.id"
+            + " JOIN rounds r ON r.session_id = s.id"
+            + " GROUP BY p.name"
+            + " ORDER BY highest_bankroll DESC, p.name")
+    List<PlayerBankrollHigh> highestBankrolls();
 
     @Select("SELECT p.name AS player_name,"
             + " COUNT(DISTINCT s.id) AS session_count,"
@@ -41,7 +51,7 @@ public interface StatsMapper {
 
     @Select("SELECT p.name AS player_name, r.session_id, r.round_number,"
             + " r.player_cards, r.dealer_cards, r.player_value, r.dealer_value,"
-            + " r.outcome, r.played_at"
+            + " r.outcome, r.bet, r.bankroll_change, r.bankroll_after, r.played_at"
             + " FROM rounds r"
             + " JOIN sessions s ON r.session_id = s.id"
             + " JOIN players p ON s.player_id = p.id"

@@ -86,6 +86,13 @@ public class HistoryRepository {
         }
     }
 
+    /** Highest bankroll each player has reached, best first. */
+    public List<PlayerBankrollHigh> highestBankrolls() {
+        try (SqlSession session = factory.openSession()) {
+            return session.getMapper(StatsMapper.class).highestBankrolls();
+        }
+    }
+
     /**
      * Persists a completed round and the player actions that led to it,
      * in one transaction. Returns the round id.

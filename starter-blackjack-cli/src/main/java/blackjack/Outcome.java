@@ -6,6 +6,10 @@ package blackjack;
  */
 public enum Outcome {
     PLAYER_WINS,
+    /** Natural blackjack: 21 with the first two cards, pays 3:2. */
+    PLAYER_BLACKJACK,
     DEALER_WINS,
-    PUSH
+    PUSH,
+    /** Player surrendered as their first action, forfeiting half the bet. */
+    SURRENDER
 }

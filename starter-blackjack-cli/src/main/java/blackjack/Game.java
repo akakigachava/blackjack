@@ -55,6 +55,14 @@ public class Game {
         return playerHand.isBust();
     }
 
+    /**
+     * The round-ending outcome when either opening hand is a natural
+     * blackjack, or null when play continues.
+     */
+    public Outcome naturalOutcome() {
+        return Rules.naturalOutcome(playerHand.isNatural(), dealerHand.isNatural());
+    }
+
     public Outcome outcome() {
         return Rules.determineOutcome(playerHand.value(), dealerHand.value());
     }

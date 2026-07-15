@@ -1,7 +1,7 @@
 package blackjack;
 
 public enum Command {
-    HIT, STAND, QUIT, INVALID;
+    HIT, STAND, DOUBLE, SURRENDER, QUIT, INVALID;
 
     public static Command parse(String rawInput) {
         String text = rawInput.trim();
@@ -13,6 +13,12 @@ public enum Command {
         }
         if (text.equals("stand")) {
             return STAND;
+        }
+        if (text.equals("double")) {
+            return DOUBLE;
+        }
+        if (text.equals("surrender")) {
+            return SURRENDER;
         }
         return INVALID;
     }

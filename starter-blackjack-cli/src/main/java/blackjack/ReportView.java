@@ -1,6 +1,7 @@
 package blackjack;
 
 import blackjack.persistence.HistoryRepository;
+import blackjack.persistence.PlayerBankrollHigh;
 import blackjack.persistence.PlayerOutcomes;
 import blackjack.persistence.PlayerRoundAverage;
 import blackjack.persistence.RoundHistoryEntry;
@@ -18,6 +19,7 @@ public class ReportView {
     public void showReports(HistoryRepository repository) {
         showRecentSessions(repository.recentSessions(DEFAULT_LIMIT));
         showPlayerOutcomes(repository.playerOutcomeCounts());
+        showHighestBankrolls(repository.highestBankrolls());
         showRoundAverages(repository.averageRoundsPerSession());
         showRecentRounds(repository.recentRounds(DEFAULT_LIMIT));
     }
@@ -43,9 +45,21 @@ public class ReportView {
             System.out.println("No completed rounds recorded yet.");
         }
         for (PlayerOutcomes o : outcomes) {
-            System.out.println(o.getPlayerName() + ": " + o.getWins() + " wins, "
-                    + o.getLosses() + " losses, " + o.getPushes() + " pushes"
+            System.out.println(o.getPlayerName() + ": " + o.getWins() + " wins ("
+                    + o.getBlackjacks() + " blackjacks), " + o.getLosses() + " losses, "
+                    + o.getPushes() + " pushes, " + o.getSurrenders() + " surrenders"
                     + " (" + o.getTotalRounds() + " rounds)");
+        }
+        System.out.println();
+    }
+
+    private void showHighestBankrolls(List<PlayerBankrollHigh> highs) {
+        System.out.println("=== Highest bankroll ===");
+        if (highs.isEmpty()) {
+            System.out.println("No completed rounds recorded yet.");
+        }
+        for (PlayerBankrollHigh high : highs) {
+            System.out.println(high.getPlayerName() + ": " + high.getHighestBankroll() + " chips");
         }
         System.out.println();
     }
@@ -70,11 +84,16 @@ public class ReportView {
             System.out.println("No completed rounds recorded yet.");
         }
         for (RoundHistoryEntry r : rounds) {
+            String change = r.getBankrollChange() > 0
+                    ? "+" + r.getBankrollChange()
+                    : String.valueOf(r.getBankrollChange());
             System.out.println("[" + TIME.format(r.getPlayedAt()) + "] " + r.getPlayerName()
                     + " session " + r.getSessionId() + " round " + r.getRoundNumber()
                     + ": " + r.getPlayerCards() + " (" + r.getPlayerValue() + ")"
                     + " vs " + r.getDealerCards() + " (" + r.getDealerValue() + ")"
-                    + " -> " + r.getOutcome());
+                    + " -> " + r.getOutcome()
+                    + " [bet " + r.getBet() + ", " + change
+                    + ", chips " + r.getBankrollAfter() + "]");
         }
     }
 }
