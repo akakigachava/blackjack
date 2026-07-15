@@ -17,7 +17,10 @@ fi
 # Maven-managed tests (JUnit).
 ./mvnw -q test
 
-# Legacy baseline checks kept from the original starter.
+# Legacy baseline checks kept from the original starter. They exercise the
+# domain classes only, so compile just the test against the classes Maven
+# already built (recompiling all sources here would need the MyBatis/H2
+# jars on the javac classpath).
 mkdir -p out
-"$JAVAC" -d out src/main/java/Main.java src/main/java/blackjack/*.java tests/BlackjackBaselineTest.java
-"$JAVA" -cp out BlackjackBaselineTest
+"$JAVAC" -cp target/classes -d out tests/BlackjackBaselineTest.java
+"$JAVA" -cp out:target/classes BlackjackBaselineTest
