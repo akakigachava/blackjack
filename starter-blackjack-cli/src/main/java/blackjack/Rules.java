@@ -3,6 +3,9 @@ package blackjack;
 public final class Rules {
     public static final int DEALER_STAND_VALUE = 17;
 
+    /** Reshuffle before a round when fewer cards than this remain. */
+    public static final int RESHUFFLE_THRESHOLD = 15;
+
     private Rules() {
     }
 

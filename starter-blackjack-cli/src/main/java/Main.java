@@ -1,5 +1,6 @@
 import blackjack.Command;
 import blackjack.ConsoleView;
+import blackjack.Deck;
 import blackjack.Game;
 import blackjack.LogSetup;
 import blackjack.Outcome;
@@ -10,6 +11,7 @@ import blackjack.persistence.SessionRecorder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.logging.Logger;
 
@@ -28,7 +30,7 @@ public class Main {
 
         LOGGER.info("Game started");
 
-        Game game = new Game();
+        Game game = new Game(Deck.shuffled(new Random()));
         ConsoleView view = new ConsoleView();
         Scanner input = new Scanner(System.in);
         List<String> actions = new ArrayList<>();

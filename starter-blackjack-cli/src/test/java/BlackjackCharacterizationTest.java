@@ -58,13 +58,66 @@ class BlackjackCharacterizationTest {
         }
 
         @Test
-        void drawFromExhaustedDeckReturnsPhantomAceOfHeartsWithoutAdvancing() {
+        void drawFromExhaustedFixedDeckReturnsPhantomAceOfHeartsWithoutAdvancing() {
             Deck deck = new Deck("2H");
             deck.draw();
 
             assertEquals("AH", deck.draw().toString());
             assertEquals("AH", deck.draw().toString());
             assertEquals(1, deck.position());
+        }
+
+        @Test
+        void shuffledDeckHasAllFiftyTwoUniqueCards() {
+            Deck deck = new Deck();
+            Deck shuffled = Deck.shuffled(new java.util.Random(42));
+
+            java.util.Set<String> ordered = new java.util.HashSet<>();
+            java.util.Set<String> randomized = new java.util.HashSet<>();
+            for (int i = 0; i < 52; i++) {
+                ordered.add(deck.cardAt(i).toString());
+                randomized.add(shuffled.cardAt(i).toString());
+            }
+            assertEquals(52, randomized.size());
+            assertEquals(ordered, randomized);
+        }
+
+        @Test
+        void shuffleWithSameSeedIsReproducible() {
+            Deck first = Deck.shuffled(new java.util.Random(42));
+            Deck second = Deck.shuffled(new java.util.Random(42));
+
+            for (int i = 0; i < 52; i++) {
+                assertEquals(first.cardAt(i).toString(), second.cardAt(i).toString());
+            }
+        }
+
+        @Test
+        void shuffledDeckReshufflesInsteadOfRunningOut() {
+            Deck deck = Deck.shuffled(new java.util.Random(42));
+            for (int i = 0; i < 52; i++) {
+                deck.draw();
+            }
+
+            assertEquals(0, deck.remaining());
+            deck.draw();
+            assertEquals(51, deck.remaining());
+        }
+
+        @Test
+        void prepareForRoundReshufflesOnlyWhenLow() {
+            Deck deck = Deck.shuffled(new java.util.Random(42));
+            for (int i = 0; i < 40; i++) {
+                deck.draw();
+            }
+
+            deck.prepareForRound(15);
+            assertEquals(52, deck.remaining());
+
+            Deck fixedDeck = new Deck("2H", "3H");
+            fixedDeck.draw();
+            fixedDeck.prepareForRound(15);
+            assertEquals(1, fixedDeck.remaining());
         }
     }
 
@@ -290,25 +343,35 @@ class BlackjackCharacterizationTest {
             return captured.toString(StandardCharsets.UTF_8);
         }
 
-        @Test
-        void standingImmediatelyLosesTheDeterministicOpeningRound() {
-            String output = playRound("stand\n");
-
-            assertTrue(output.contains("Dealer value: 17"), output);
-            assertTrue(output.contains("Dealer wins"), output);
+        private void assertSomeOutcomeShown(String output) {
+            assertTrue(output.contains("Player wins")
+                            || output.contains("Dealer wins")
+                            || output.contains("Push"),
+                    output);
         }
 
         @Test
-        void hittingOnceThenStandingIsAPush() {
-            String output = playRound("hit\nstand\n");
+        void standingEndsTheRoundWithAnOutcome() {
+            String output = playRound("stand\n");
 
-            assertTrue(output.contains("Player value: 19"), output);
-            assertTrue(output.contains("Push"), output);
+            assertTrue(output.contains("Player action> "), output);
+            assertTrue(output.contains("Dealer value: "), output);
+            assertSomeOutcomeShown(output);
+        }
+
+        @Test
+        void hittingKeepsTheRoundGoingUntilStand() {
+            // 25 hit commands guarantee a bust even across reshuffles (any
+            // hand of 22+ cards exceeds 21), so the round always ends
+            // whether or not the stand is ever reached.
+            String output = playRound("hit\n".repeat(25) + "stand\n");
+
+            assertSomeOutcomeShown(output);
         }
 
         @Test
         void hittingUntilBustEndsTheRoundWithDealerWin() {
-            String output = playRound("hit\nhit\nhit\n");
+            String output = playRound("hit\n".repeat(25));
 
             assertTrue(output.contains("Player busts. Dealer wins."), output);
         }
@@ -318,7 +381,7 @@ class BlackjackCharacterizationTest {
             String output = playRound("blackjack!\n");
 
             assertTrue(output.contains("Invalid command. You stand."), output);
-            assertTrue(output.contains("Dealer wins"), output);
+            assertSomeOutcomeShown(output);
         }
 
         @Test

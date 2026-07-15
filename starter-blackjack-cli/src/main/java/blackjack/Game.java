@@ -31,6 +31,7 @@ public class Game {
 
     public void startRound() {
         LOGGER.info("Round started");
+        deck.prepareForRound(Rules.RESHUFFLE_THRESHOLD);
         playerHand = new Hand();
         dealerHand = new Hand();
         dealTo(playerHand, "player");
